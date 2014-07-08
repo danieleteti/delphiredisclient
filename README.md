@@ -13,11 +13,14 @@ This is the  interface used to send command to the Redis server. Each method is 
 ```Delphi
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
+    
+    //single values
     function &SET(const AKey, AValue: string): boolean;
     function GET(const AKey: string; out AValue: string): boolean;
     function DEL(const AKeys: array of string): Integer;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
+   
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
     function RPUSHX(const AListKey: string; AValues: array of string): Integer;
@@ -34,6 +37,11 @@ This is the  interface used to send command to the Redis server. Each method is 
 
     // system
     function FLUSHDB: boolean;
+
+    // raw execute
+    function ExecuteWithStringArrayResult(const RedisCommand: string): TArray<string>;
+    function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
+    
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
