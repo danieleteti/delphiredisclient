@@ -25,7 +25,12 @@ type
     function RPOP(const AListKey: string; var Value: string): boolean;
     function LPUSH(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
+    function LLEN(const AListKey: string): Integer;
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer): TArray<string>;
+    function RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
+    function BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
+    function BRPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
+
     // system
     function FLUSHDB: boolean;
     function Tokenize(const ARedisCommand: string): TArray<string>;
@@ -61,14 +66,18 @@ type
     FNotExists: boolean;
     NextCMD: TRedisCmdParts;
     FValidResponse: boolean;
+    IsValidResponse: boolean;
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseIntegerResponse: Integer;
-    function ParseArrayResponse: TArray<string>;
+    function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
     procedure CheckResponseType(Expected, Actual: string);
   protected
     procedure Connect;
     function GetCmdList(const CMD: string): TRedisCmdParts;
     function NextToken: string;
+    /// //
+    function InternalBlockingLeftOrRightPOP(NextCMD: TRedisCmdParts; AKeys: array of string; ATimeout: Int32;
+      var AIsValidResponse: boolean): TArray<string>;
 
   public
     function Tokenize(const ARedisCommand: string): TArray<string>;
@@ -85,6 +94,10 @@ type
     function LPUSH(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer): TArray<string>;
+    function LLEN(const AListKey: string): Integer;
+    function RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
+    function BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
+    function BRPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
     // system
     function FLUSHDB: boolean;
     // raw execute
@@ -95,6 +108,21 @@ type
   end;
 
   { TRedisClient }
+
+function TRedisClient.BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
+begin
+  NextCMD := GetCmdList('BLPOP');
+  Value := InternalBlockingLeftOrRightPOP(NextCMD, AKeys, ATimeout, IsValidResponse);
+  Result := IsValidResponse;
+end;
+
+function TRedisClient.BRPOP(const AKeys: array of string; const ATimeout: Int32;
+  out Value: TArray<string>): boolean;
+begin
+  NextCMD := GetCmdList('BRPOP');
+  Value := InternalBlockingLeftOrRightPOP(NextCMD, AKeys, ATimeout, IsValidResponse);
+  Result := IsValidResponse;
+end;
 
 procedure TRedisClient.CheckResponseType(Expected, Actual: string);
 begin
@@ -155,7 +183,7 @@ begin
   for I := 1 to Length(Pieces) - 1 do
     NextCMD.Add(Pieces[I]);
   FTCPLibInstance.SendCmd(NextCMD);
-  Result := ParseArrayResponse;
+  Result := ParseArrayResponse(IsValidResponse);
 end;
 
 function TRedisClient.ExecuteWithStringArrayResult(
@@ -192,6 +220,18 @@ begin
   Result.Add(CMD);
 end;
 
+function TRedisClient.InternalBlockingLeftOrRightPOP(
+  NextCMD: TRedisCmdParts;
+  AKeys: array of string;
+  ATimeout: Int32;
+  var AIsValidResponse: boolean): TArray<string>;
+begin
+  NextCMD.AddRange(AKeys);
+  NextCMD.Add(ATimeout.ToString);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseArrayResponse(AIsValidResponse);
+end;
+
 function TRedisClient.KEYS(const AKeyPattern: string): TArray<string>;
 var
   R: string;
@@ -199,7 +239,15 @@ begin
   NextCMD := GetCmdList('KEYS');
   NextCMD.Add(AKeyPattern);
   FTCPLibInstance.SendCmd(NextCMD);
-  Result := ParseArrayResponse;
+  Result := ParseArrayResponse(IsValidResponse);
+end;
+
+function TRedisClient.LLEN(const AListKey: string): Integer;
+begin
+  NextCMD := GetCmdList('LLEN');
+  NextCMD.Add(AListKey);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse;
 end;
 
 function TRedisClient.LPOP(const AListKey: string; out Value: string): boolean;
@@ -228,7 +276,7 @@ begin
   NextCMD.Add(IndexStart.ToString);
   NextCMD.Add(IndexStop.ToString);
   FTCPLibInstance.SendCmd(NextCMD);
-  Result := ParseArrayResponse;
+  Result := ParseArrayResponse(IsValidResponse);
 end;
 
 function TRedisClient.MSET(const AKeysValues: array of string): boolean;
@@ -244,15 +292,23 @@ begin
   Result := FTCPLibInstance.Receive(FCommandTimeout);
 end;
 
-function TRedisClient.ParseArrayResponse: TArray<string>;
+function TRedisClient.ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
 var
   R: string;
   ArrLength: Integer;
   I: Integer;
 begin
+  AValidResponse := True;
   R := NextToken;
   if R.Chars[0] = '*' then
-    ArrLength := R.Substring(1).ToInteger
+  begin
+    ArrLength := R.Substring(1).ToInteger;
+    if ArrLength = -1 then // REDIS_NULL_BULK_STRING
+    begin
+      AValidResponse := False;
+      Exit;
+    end;
+  end
   else if R.Chars[0] = '-' then
     raise ERedisException.Create(R.Substring(1))
   else
@@ -311,7 +367,7 @@ begin
         else if HowMany = -1 then // "$-1\r\n" --> This is called a Null Bulk String.
         begin
           AValidResponse := False;
-          Result := REDIS_NULL_BULK_STRING;
+          Result := '';
         end;
       end;
   else
@@ -325,6 +381,17 @@ begin
   NextCMD.Add(AListKey);
   FTCPLibInstance.SendCmd(NextCMD);
   Value := ParseSimpleStringResponse(Result);
+end;
+
+function TRedisClient.RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string)
+  : boolean;
+begin
+  NextCMD := GetCmdList('RPOPLPUSH');
+  NextCMD.Add(ARightListKey);
+  NextCMD.Add(ALeftListKey);
+  FTCPLibInstance.SendCmd(NextCMD);
+  APoppedAndPushedElement := ParseSimpleStringResponse(FValidResponse);
+  Result := FValidResponse;
 end;
 
 function TRedisClient.RPUSH(const AListKey: string; AValues: array of string): Integer;

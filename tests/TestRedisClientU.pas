@@ -40,6 +40,10 @@ type
     procedure TestRPUSH_RPOP;
     procedure TestLPUSH_LPOP;
     procedure TestLRANGE;
+    procedure TestLLEN;
+    procedure TestRPOPLPUSH;
+    procedure TestBLPOP;
+    procedure TestBRPOP;
   end;
 
 implementation
@@ -53,6 +57,74 @@ end;
 procedure TestRedisClient.TearDown;
 begin
   FRedis := nil;
+end;
+
+procedure TestRedisClient.TestBLPOP;
+begin
+  // setup list
+  FRedis.DEL(['mylist']);
+  FRedis.RPUSH('mylist', ['one', 'two']);
+
+  // pop from a non-empty list
+  CheckTrue(FRedis.BLPOP(['mylist'], 1, ArrRes));
+  CheckEquals('mylist', ArrRes[0]);
+  CheckEquals('one', ArrRes[1]);
+
+  // pop from a non-empty list
+  CheckTrue(FRedis.BLPOP(['mylist'], 1, ArrRes));
+  CheckEquals('mylist', ArrRes[0]);
+  CheckEquals('two', ArrRes[1]);
+
+  // pop from a empty list, check the timeout
+  CheckFalse(FRedis.BLPOP(['mylist'], 1, ArrRes));
+  CheckEquals(0, Length(ArrRes));
+
+  // now, test if it works when another thread pushes a values into the list
+  TThread.CreateAnonymousThread(
+    procedure
+    var
+      Redis: IRedisClient;
+    begin
+      Redis := NewRedisClient('localhost');
+      Redis.RPUSH('mylist', ['from', 'another', 'thread']);
+    end).Start;
+
+  CheckTrue(FRedis.BLPOP(['mylist'], 10, ArrRes));
+  CheckEquals(2, Length(ArrRes));
+end;
+
+procedure TestRedisClient.TestBRPOP;
+begin
+  // setup list
+  FRedis.DEL(['mylist']);
+  FRedis.RPUSH('mylist', ['one', 'two']);
+
+  // pop from a non-empty list
+  CheckTrue(FRedis.BRPOP(['mylist'], 1, ArrRes));
+  CheckEquals('mylist', ArrRes[0]);
+  CheckEquals('two', ArrRes[1]);
+
+  // pop from a non-empty list
+  CheckTrue(FRedis.BRPOP(['mylist'], 1, ArrRes));
+  CheckEquals('mylist', ArrRes[0]);
+  CheckEquals('one', ArrRes[1]);
+
+  // pop from a empty list, check the timeout
+  CheckFalse(FRedis.BRPOP(['mylist'], 1, ArrRes));
+  CheckEquals(0, Length(ArrRes));
+
+  // now, test if it works when another thread pushes a values into the list
+  TThread.CreateAnonymousThread(
+    procedure
+    var
+      Redis: IRedisClient;
+    begin
+      Redis := NewRedisClient('localhost');
+      Redis.RPUSH('mylist', ['from', 'another', 'thread']);
+    end).Start;
+
+  CheckTrue(FRedis.BRPOP(['mylist'], 10, ArrRes));
+  CheckEquals(2, Length(ArrRes));
 end;
 
 procedure TestRedisClient.TestCommandParser;
@@ -100,6 +172,19 @@ begin
   CheckEquals(1, FRedis.DEL(['NOME']));
   CheckFalse(FRedis.GET('NOME', Res));
   CheckTrue(FRedis.GET('COGNOME', Res));
+end;
+
+procedure TestRedisClient.TestLLEN;
+begin
+  FRedis.DEL(['mylist']);
+  CheckEquals(0, FRedis.LLEN('mylist'));
+
+  FRedis.RPUSH('mylist', ['one', 'two']);
+  CheckEquals(2, FRedis.LLEN('mylist'));
+
+  FRedis.&SET('myvalue', '3');
+  ExpectedException := ERedisException;
+  FRedis.LLEN('myvalue');
 end;
 
 procedure TestRedisClient.TestLPUSH_LPOP;
@@ -154,6 +239,18 @@ begin
   CheckTrue(FRedis.MSET(['one', '1', 'two', '2', 'three', '3']));
   ArrRes := FRedis.KEYS('*o*');
   CheckEquals(2, Length(ArrRes));
+end;
+
+procedure TestRedisClient.TestRPOPLPUSH;
+var
+  Value: string;
+begin
+  FRedis.DEL(['mylist', 'myotherlist']);
+  CheckFalse(FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
+  CheckEquals('', Value);
+  FRedis.RPUSH('mylist', ['one', 'two']);
+  CheckEquals(true, FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
+  CheckEquals('two', Value);
 end;
 
 procedure TestRedisClient.TestRPUSH_RPOP;
