@@ -50,3 +50,6 @@
 # Delphi history and backups
 __history/
 *.~*
+*.dcu
+/tests/bin/dunit.ini
+/tests/RedisClientTests.res
