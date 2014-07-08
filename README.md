@@ -4,6 +4,7 @@ delphiredisclient
 Redis client for Delphi XE6 and XE5
 
 
+<code>
 program SetGet;
 
 {$APPTYPE CONSOLE}
@@ -36,4 +37,5 @@ begin
   end;
 
 end.
+</code>
 
