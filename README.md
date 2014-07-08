@@ -1,9 +1,10 @@
-delphiredisclient
+Delphi Redis client
 =================
 
 Redis client for Delphi XE6 and XE5
 
 
+```Delphi
     program SetGet;
 
     {$APPTYPE CONSOLE}
@@ -35,4 +36,5 @@ Redis client for Delphi XE6 and XE5
       end;
     
     end.
+```
 
