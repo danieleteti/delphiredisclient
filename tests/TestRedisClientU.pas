@@ -38,12 +38,14 @@ type
     procedure TestMSET;
     procedure TestDelete;
     procedure TestRPUSH_RPOP;
+    procedure TestRPUSHX_LPUSHX;
     procedure TestLPUSH_LPOP;
     procedure TestLRANGE;
     procedure TestLLEN;
     procedure TestRPOPLPUSH;
     procedure TestBLPOP;
     procedure TestBRPOP;
+    procedure TestLREM;
   end;
 
 implementation
@@ -233,6 +235,16 @@ begin
   CheckEquals(0, Length(ArrRes));
 end;
 
+procedure TestRedisClient.TestLREM;
+begin
+  FRedis.DEL(['mylist']);
+  FRedis.RPUSH('mylist', ['hello', 'hello', 'foo', 'hello']);
+  FRedis.LREM('mylist', -2, 'hello');
+  ArrRes := FRedis.LRANGE('mylist', 0, -1);
+  CheckEquals('hello', ArrRes[0]);
+  CheckEquals('foo', ArrRes[1]);
+end;
+
 procedure TestRedisClient.TestMSET;
 begin
   CheckTrue(FRedis.FLUSHDB);
@@ -251,6 +263,25 @@ begin
   FRedis.RPUSH('mylist', ['one', 'two']);
   CheckEquals(true, FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
   CheckEquals('two', Value);
+end;
+
+procedure TestRedisClient.TestRPUSHX_LPUSHX;
+begin
+  FRedis.DEL(['mylist']);
+  // mylist doesn't exists, so RPUSHX doesn't create it.
+  CheckEquals(0, FRedis.RPUSHX('mylist', ['one']));
+  CheckEquals(0, FRedis.LLEN('mylist'));
+
+  // RPUSH creates mylist
+  CheckEquals(1, FRedis.RPUSH('mylist', ['one']));
+  CheckEquals(1, FRedis.LLEN('mylist'));
+
+  // RPUSHX append to the list
+  CheckEquals(2, FRedis.RPUSHX('mylist', ['two']));
+
+  FRedis.DEL(['mylist']);
+  CheckEquals(0, FRedis.LPUSHX('mylist', ['one']));
+  CheckEquals(0, FRedis.LLEN('mylist'));
 end;
 
 procedure TestRedisClient.TestRPUSH_RPOP;

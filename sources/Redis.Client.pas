@@ -14,7 +14,6 @@ type
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
-    // procedure Connect(const HostName: string; const Port: Word);
     function &SET(const AKey, AValue: string): boolean;
     function GET(const AKey: string; out AValue: string): boolean;
     function DEL(const AKeys: array of string): Integer;
@@ -22,17 +21,21 @@ type
     function KEYS(const AKeyPattern: string): TArray<string>;
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
+    function RPUSHX(const AListKey: string; AValues: array of string): Integer;
     function RPOP(const AListKey: string; var Value: string): boolean;
     function LPUSH(const AListKey: string; AValues: array of string): Integer;
+    function LPUSHX(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
     function LLEN(const AListKey: string): Integer;
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer): TArray<string>;
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
     function BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
     function BRPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
+    function LREM(const AListKey: string; const ACount: Integer; const AValue: string): Integer;
 
     // system
     function FLUSHDB: boolean;
+    // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
   end;
@@ -90,14 +93,17 @@ type
     function KEYS(const AKeyPattern: string): TArray<string>;
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
+    function RPUSHX(const AListKey: string; AValues: array of string): Integer;
     function RPOP(const AListKey: string; var Value: string): boolean;
     function LPUSH(const AListKey: string; AValues: array of string): Integer;
+    function LPUSHX(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer): TArray<string>;
     function LLEN(const AListKey: string): Integer;
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
     function BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
     function BRPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
+    function LREM(const AListKey: string; const ACount: Integer; const AValue: string): Integer;
     // system
     function FLUSHDB: boolean;
     // raw execute
@@ -268,6 +274,16 @@ begin
   Result := ParseIntegerResponse;
 end;
 
+function TRedisClient.LPUSHX(const AListKey: string;
+  AValues: array of string): Integer;
+begin
+  NextCMD := GetCmdList('LPUSHX');
+  NextCMD.Add(AListKey);
+  NextCMD.AddRange(AValues);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse;
+end;
+
 function TRedisClient.LRANGE(const AListKey: string; IndexStart,
   IndexStop: Integer): TArray<string>;
 begin
@@ -277,6 +293,17 @@ begin
   NextCMD.Add(IndexStop.ToString);
   FTCPLibInstance.SendCmd(NextCMD);
   Result := ParseArrayResponse(IsValidResponse);
+end;
+
+function TRedisClient.LREM(const AListKey: string; const ACount: Integer;
+  const AValue: string): Integer;
+begin
+  NextCMD := GetCmdList('LREM');
+  NextCMD.Add(AListKey);
+  NextCMD.Add(ACount.ToString);
+  NextCMD.Add(AValue);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse;
 end;
 
 function TRedisClient.MSET(const AKeysValues: array of string): boolean;
@@ -397,6 +424,16 @@ end;
 function TRedisClient.RPUSH(const AListKey: string; AValues: array of string): Integer;
 begin
   NextCMD := GetCmdList('RPUSH');
+  NextCMD.Add(AListKey);
+  NextCMD.AddRange(AValues);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse;
+end;
+
+function TRedisClient.RPUSHX(const AListKey: string;
+  AValues: array of string): Integer;
+begin
+  NextCMD := GetCmdList('RPUSHX');
   NextCMD.Add(AListKey);
   NextCMD.AddRange(AValues);
   FTCPLibInstance.SendCmd(NextCMD);
