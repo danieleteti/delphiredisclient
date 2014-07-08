@@ -35,6 +35,9 @@ type
 
     // system
     function FLUSHDB: boolean;
+    // raw execute
+    function ExecuteWithStringArrayResult(const RedisCommand: string): TArray<string>;
+    function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
