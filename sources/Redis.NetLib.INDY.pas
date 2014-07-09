@@ -22,7 +22,7 @@ type
 implementation
 
 uses
-  System.SysUtils;
+  System.SysUtils, idGlobal;
 
 { TRedisTCPLibINDY }
 
@@ -53,12 +53,12 @@ end;
 
 function TRedisTCPLibINDY.Receive(const Timeout): string;
 begin
-  Result := FTCPClient.IOHandler.ReadLn();
+  Result := FTCPClient.IOHandler.ReadLn(IndyTextEncoding_Default);
 end;
 
 procedure TRedisTCPLibINDY.Send(const Value: string);
 begin
-  FTCPClient.IOHandler.WriteLn(Value);
+  FTCPClient.IOHandler.WriteLn(AnsiString(Value)); // , IndyTextEncoding_Default);
 end;
 
 procedure TRedisTCPLibINDY.SendCmd(const Values: TRedisCmdParts);
@@ -72,7 +72,7 @@ begin
     Value.Append(Values[0]);
     for I := 1 to Values.Count - 1 do
     begin
-      Value.Append(' ' + Values[I].QuotedString);
+      Value.Append(' ' + Values.GetRedisToken(I));
     end;
     Send(Value.ToString);
   finally

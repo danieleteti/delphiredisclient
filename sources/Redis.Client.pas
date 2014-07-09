@@ -6,7 +6,16 @@ uses
   Generics.Collections, System.SysUtils;
 
 type
-  TRedisCmdParts = TList<string>;
+  TRedisCmdParts = class(TList<string>)
+  protected
+    FBldr: TStringBuilder;
+    function GetBuilder: TStringBuilder;
+    procedure ClearBuilder;
+  public
+    function GetRedisToken(const Index: Integer): string;
+    function GetBinaryRedisToken(const Index: Integer): TBytes;
+    destructor Destroy; override;
+  end;
 
   ERedisException = class(Exception)
 
@@ -79,7 +88,7 @@ type
     procedure CheckResponseType(Expected, Actual: string);
   protected
     procedure Connect;
-    function GetCmdList(const CMD: string): TRedisCmdParts;
+    function GetCmdList(const Cmd: string): TRedisCmdParts;
     function NextToken: string;
     /// //
     function InternalBlockingLeftOrRightPOP(NextCMD: TRedisCmdParts; AKeys: array of string; ATimeout: Int32;
@@ -159,11 +168,11 @@ end;
 function TRedisClient.DEL(const AKeys: array of string): Integer;
 var
   R: string;
-  CMD: TRedisCmdParts;
+  Cmd: TRedisCmdParts;
 begin
-  CMD := GetCmdList('DEL');
-  CMD.AddRange(AKeys);
-  FTCPLibInstance.SendCmd(CMD);
+  Cmd := GetCmdList('DEL');
+  Cmd.AddRange(AKeys);
+  FTCPLibInstance.SendCmd(Cmd);
   Result := ParseIntegerResponse;
 end;
 
@@ -203,9 +212,9 @@ end;
 
 function TRedisClient.FLUSHDB: boolean;
 var
-  CMD: TRedisCmdParts;
+  Cmd: TRedisCmdParts;
 begin
-  FTCPLibInstance.Send('FLUSHDB');
+  FTCPLibInstance.SendCmd(GetCmdList('FLUSHDB'));
   Result := ParseSimpleStringResponse(FNotExists) = 'OK';
 end;
 
@@ -222,11 +231,11 @@ begin
   Result := FValidResponse;
 end;
 
-function TRedisClient.GetCmdList(const CMD: string): TList<string>;
+function TRedisClient.GetCmdList(const Cmd: string): TRedisCmdParts;
 begin
   FRedisCmdParts.Clear;
   Result := FRedisCmdParts;
-  Result.Add(CMD);
+  Result.Add(Cmd);
 end;
 
 function TRedisClient.InternalBlockingLeftOrRightPOP(
@@ -390,8 +399,8 @@ begin
         if HowMany > 0 then
         begin
           R := NextToken;
-          if R.Length <> HowMany then
-            raise ERedisException.CreateFmt('Invalid string len Expected [%s] got [%d]', [HowMany, R.Length]);
+          // if R.Length <> HowMany then
+          // raise ERedisException.CreateFmt('Invalid string len Expected [%d] got [%d]', [HowMany, R.Length]);
           Result := R;
         end
         else if HowMany = -1 then // "$-1\r\n" --> This is called a Null Bulk String.
@@ -555,6 +564,44 @@ begin
     Result := nil;
     raise;
   end;
+end;
+
+{ TRedisCmdParts }
+
+procedure TRedisCmdParts.ClearBuilder;
+begin
+  if assigned(FBldr) then
+    FBldr.Clear;
+end;
+
+destructor TRedisCmdParts.Destroy;
+begin
+  FBldr.Free;
+  inherited;
+end;
+
+function TRedisCmdParts.GetBinaryRedisToken(const Index: Integer): TBytes;
+begin
+end;
+
+function TRedisCmdParts.GetBuilder: TStringBuilder;
+begin
+  if not assigned(FBldr) then
+    FBldr := TStringBuilder.Create;
+  Result := FBldr;
+end;
+
+function TRedisCmdParts.GetRedisToken(const Index: Integer): string;
+var
+  // I: Integer;
+  itm: string;
+  // bldr: TStringBuilder;
+  // C: Char;
+  // AnsiC: AnsiChar;
+begin
+  if index = 0 then
+    Exit(Items[0]); // this is always the command
+  Result := '"' + Items[index].Replace('"', '\"', [rfReplaceAll]) + '"';
 end;
 
 end.

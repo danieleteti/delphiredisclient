@@ -35,6 +35,7 @@ type
   published
     procedure TestCommandParser;
     procedure TestSetGet;
+    procedure TestSetGetUnicode;
     procedure TestMSET;
     procedure TestDelete;
     procedure TestRPUSH_RPOP;
@@ -314,6 +315,38 @@ begin
   CheckTrue(FRedis.&SET('no"me', 'Dan"iele'));
   CheckTrue(FRedis.GET('no"me', Res));
   CheckEquals('Dan"iele', Res);
+
+  CheckTrue(FRedis.&SET('no"me', 'Dan iele'));
+  CheckTrue(FRedis.GET('no"me', Res));
+  CheckEquals('Dan iele', Res);
+end;
+
+procedure TestRedisClient.TestSetGetUnicode;
+var
+  Res: string;
+  function RedisEnc(const Value: string): ansistring;
+  var
+    C: Char;
+    B: TBytes;
+    bb: byte;
+  begin
+    for C in Value do
+    begin
+
+      // for bb in B do
+      // begin
+      // Result := Result + '\x' + IntToHex(bb, 2);
+      // end;
+    end;
+  end;
+
+begin
+  // CheckTrue(FRedis.&SET('nome', 'daniele'));
+  // CheckTrue(FRedis.GET('nome', Res));
+  // CheckEquals('daniele', Res);
+  CheckTrue(FRedis.&SET('nome', RedisEnc('אטילעש')));
+  CheckTrue(FRedis.GET('nome', Res));
+  CheckEquals('אטילעש', Res);
 end;
 
 initialization
