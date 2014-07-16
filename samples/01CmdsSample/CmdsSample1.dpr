@@ -15,7 +15,7 @@ var
 begin
   try
     Redis := NewRedisClient('localhost');
-    Redis.&SET('firstname', 'Daniele');
+    Redis.&SET(bytesof('firstname'), bytesof('Daniele'));
     Redis.GET('firstname', Value);
     WriteLn('key firstname, value ', Value);
     WriteLn('DEL firstname');

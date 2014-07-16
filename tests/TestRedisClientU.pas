@@ -15,7 +15,7 @@ uses
   TestFramework, System.Variants, IdTCPClient, Winapi.Windows, Vcl.Dialogs,
   Vcl.Forms, IdTCPConnection, Vcl.Controls, System.Classes, System.SysUtils,
   IdComponent, Winapi.Messages, IdBaseComponent, Vcl.Graphics, Vcl.StdCtrls,
-  Redis.Client;
+  Redis.Client, Redis.Commons;
 
 type
   // Test methods for class IRedisClient
@@ -54,7 +54,7 @@ implementation
 
 procedure TestRedisClient.SetUp;
 begin
-  FRedis := NewRedisClient('localhost');
+  FRedis := NewRedisClient('localhost', 6379, 'indy');
 end;
 
 procedure TestRedisClient.TearDown;
@@ -250,7 +250,7 @@ procedure TestRedisClient.TestMSET;
 begin
   CheckTrue(FRedis.FLUSHDB);
   CheckTrue(FRedis.MSET(['one', '1', 'two', '2', 'three', '3']));
-  ArrRes := FRedis.KEYS('*o*');
+  ArrRes := FRedis.KEYS('*e*');
   CheckEquals(2, Length(ArrRes));
 end;
 
@@ -309,7 +309,7 @@ var
   Res: string;
 begin
   CheckTrue(FRedis.&SET('nome', 'Daniele'));
-  CheckTrue(FRedis.GET('nome', Res));
+  FRedis.GET('nome', Res);
   CheckEquals('Daniele', Res);
 
   CheckTrue(FRedis.&SET('no"me', 'Dan"iele'));
@@ -323,30 +323,11 @@ end;
 
 procedure TestRedisClient.TestSetGetUnicode;
 var
-  Res: string;
-  function RedisEnc(const Value: string): ansistring;
-  var
-    C: Char;
-    B: TBytes;
-    bb: byte;
-  begin
-    for C in Value do
-    begin
-
-      // for bb in B do
-      // begin
-      // Result := Result + '\x' + IntToHex(bb, 2);
-      // end;
-    end;
-  end;
-
+  Res: TBytes;
 begin
-  // CheckTrue(FRedis.&SET('nome', 'daniele'));
-  // CheckTrue(FRedis.GET('nome', Res));
-  // CheckEquals('daniele', Res);
-  CheckTrue(FRedis.&SET('nome', RedisEnc('אטילעש')));
-  CheckTrue(FRedis.GET('nome', Res));
-  CheckEquals('אטילעש', Res);
+  CheckTrue(FRedis.&SET(bytesof('nome'), TEncoding.Unicode.GetBytes('אטילעש')));
+  CheckTrue(FRedis.GET(bytesof('nome'), Res));
+  CheckEquals('אטילעש', TEncoding.Unicode.GetString(Res));
 end;
 
 initialization

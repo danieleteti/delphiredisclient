@@ -20,7 +20,9 @@ uses
   TestRedisClientU in 'TestRedisClientU.pas',
   Redis.Client in '..\sources\Redis.Client.pas',
   Redis.NetLib.Factory in '..\sources\Redis.NetLib.Factory.pas',
-  Redis.NetLib.INDY in '..\sources\Redis.NetLib.INDY.pas';
+  Redis.NetLib.INDY in '..\sources\Redis.NetLib.INDY.pas',
+  Redis.Command in '..\sources\Redis.Command.pas',
+  Redis.Commons in '..\sources\Redis.Commons.pas';
 
 {$R *.RES }
 

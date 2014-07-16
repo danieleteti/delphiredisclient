@@ -2,7 +2,8 @@ unit Redis.NetLib.Factory;
 
 interface
 
-uses Redis.Client, System.Generics.Collections;
+uses Redis.Client, System.Generics.Collections, System.SysUtils, Redis.Command,
+  Redis.Commons;
 
 type
   // this class introduce the virtual constructor
@@ -11,8 +12,11 @@ type
   protected
     procedure Connect(const HostName: string; const Port: Word); virtual; abstract;
     procedure Send(const Value: string); virtual; abstract;
-    procedure SendCmd(const Values: TRedisCmdParts); virtual; abstract;
-    function Receive(const Timeout): string; virtual; abstract;
+    procedure SendCmd(const Values: IRedisCommand); virtual; abstract;
+    procedure Write(const Bytes: TBytes); virtual; abstract;
+    procedure WriteCrLf(const Bytes: TBytes); virtual; abstract;
+    function Receive(const Timeout: UInt32): string; virtual; abstract;
+    function ReceiveBytes(const ACount: Int64; const Timeout: UInt32): System.TArray<System.Byte>; virtual; abstract;
     procedure Disconnect; virtual; abstract;
   end;
 
@@ -24,9 +28,6 @@ type
   end;
 
 implementation
-
-uses
-  System.SysUtils;
 
 var
   RedisTCPLibraryRegistry: TDictionary<string, TRedisTCPLibClass>;
