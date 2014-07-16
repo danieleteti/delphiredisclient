@@ -7,6 +7,7 @@ uses
 
 function NewRedisClient(const AHostName: string; const APort: Word = 6379; const ALibName: string = 'indy')
   : IRedisClient;
+function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 
 implementation
 
@@ -26,7 +27,7 @@ type
     IsValidResponse: boolean;
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseSimpleStringResponseAsByte(var AValidResponse: boolean): TBytes;
-    function ParseIntegerResponse: Integer;
+    function ParseIntegerResponse: NativeInt;
     function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
     procedure CheckResponseType(Expected, Actual: string);
   protected
@@ -43,13 +44,16 @@ type
     constructor Create(TCPLibInstance: IRedisNetLibAdapter; const HostName: string; const Port: Word;
       const UseUnicodeString: boolean);
     destructor Destroy; override;
+    /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
     function GET(const AKey: string; out AValue: string): boolean; overload;
     function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
     function DEL(const AKeys: array of string): Integer;
+    function INCR(const AKey: string): NativeInt;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
+    function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
     function RPUSHX(const AListKey: string; AValues: array of string): Integer;
@@ -66,7 +70,7 @@ type
     // system
     function FLUSHDB: boolean;
     // raw execute
-    function ExecuteWithStringArrayResult(const RedisCommand: string): TArray<string>;
+    function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TArray<string>;
     function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
     procedure Disconnect;
     procedure SetCommandTimeout(const Timeout: Int32);
@@ -160,10 +164,28 @@ begin
   Result := ParseArrayResponse(IsValidResponse);
 end;
 
-function TRedisClient.ExecuteWithStringArrayResult(
-  const RedisCommand: string): TArray<string>;
+function TRedisClient.EXPIRE(const AKey: string;
+  AExpireInSecond: UInt32): boolean;
 begin
+  FTCPLibInstance.Write(GetCmdList('EXPIRE')
+    .Add(AKey)
+    .Add(AExpireInSecond.ToString)
+    .ToRedisCommand);
 
+  {
+    1 if the timeout was set.
+    0 if key does not exist or the timeout could not be set.
+  }
+  Result := ParseIntegerResponse = 1;
+end;
+
+function TRedisClient.ExecuteAndGetArray(
+  const RedisCommand: IRedisCommand): TArray<string>;
+begin
+  FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
+  Result := ParseArrayResponse(FValidResponse);
+  if not FValidResponse then
+    raise ERedisException.Create('Not valid response');
 end;
 
 function TRedisClient.FLUSHDB: boolean;
@@ -203,6 +225,12 @@ begin
   FRedisCmdParts.Clear;
   Result := FRedisCmdParts;
   Result.SetCommand(Cmd);
+end;
+
+function TRedisClient.INCR(const AKey: string): NativeInt;
+begin
+  FTCPLibInstance.Write(GetCmdList('INCR').Add(AKey).ToRedisCommand);
+  Result := ParseIntegerResponse;
 end;
 
 function TRedisClient.InternalBlockingLeftOrRightPOP(
@@ -337,7 +365,7 @@ begin
   end;
 end;
 
-function TRedisClient.ParseIntegerResponse: Integer;
+function TRedisClient.ParseIntegerResponse: NativeInt;
 var
   R: string;
   I: Integer;
@@ -569,6 +597,12 @@ begin
     Result := nil;
     raise;
   end;
+end;
+
+function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
+begin
+  Result := TRedisCommand.Create(False);
+  TRedisCommand(Result).SetCommand(RedisCommandString);
 end;
 
 end.

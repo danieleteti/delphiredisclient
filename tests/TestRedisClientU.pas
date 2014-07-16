@@ -34,9 +34,12 @@ type
     procedure TearDown; override;
   published
     procedure TestCommandParser;
+    procedure TestExecuteWithStringArrayResponse;
     procedure TestSetGet;
     procedure TestSetGetUnicode;
     procedure TestMSET;
+    procedure TestINCR;
+    procedure TestEXPIRE;
     procedure TestDelete;
     procedure TestRPUSH_RPOP;
     procedure TestRPUSHX_LPUSHX;
@@ -175,6 +178,39 @@ begin
   CheckEquals(1, FRedis.DEL(['NOME']));
   CheckFalse(FRedis.GET('NOME', Res));
   CheckTrue(FRedis.GET('COGNOME', Res));
+end;
+
+procedure TestRedisClient.TestExecuteWithStringArrayResponse;
+var
+  Cmd: IRedisCommand;
+begin
+  FRedis.FLUSHDB;
+  Cmd := NewRedisCommand('keys');
+  Cmd.Add('*o*');
+  CheckEquals(0, Length(FRedis.ExecuteAndGetArray(Cmd)));
+  FRedis.&SET('1one', '1');
+  FRedis.&SET('2one', '2');
+  CheckEquals(2, Length(FRedis.ExecuteAndGetArray(Cmd)));
+end;
+
+procedure TestRedisClient.TestEXPIRE;
+var
+  v: string;
+begin
+  FRedis.&SET('daniele', '1234');
+  FRedis.EXPIRE('daniele', 1);
+  FRedis.GET('daniele', v);
+  CheckEquals('1234', v);
+  TThread.Sleep(2000);
+  CheckFalse(FRedis.GET('daniele', v));
+end;
+
+procedure TestRedisClient.TestINCR;
+begin
+  FRedis.&SET('daniele', '-1');
+  CheckEquals(0, FRedis.INCR('daniele'));
+  FRedis.&SET('daniele', '1');
+  CheckEquals(2, FRedis.INCR('daniele'));
 end;
 
 procedure TestRedisClient.TestLLEN;

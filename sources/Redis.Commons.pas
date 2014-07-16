@@ -17,6 +17,8 @@ type
     function StringOfUnicode(const ABytes: TBytes): string;
   end;
 
+  IRedisCommand = interface;
+
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
     function &SET(const AKey, AValue: string): boolean; overload;
@@ -26,6 +28,8 @@ type
     function DEL(const AKeys: array of string): Integer;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
+    function INCR(const AKey: string): NativeInt;
+    function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
     function RPUSHX(const AListKey: string; AValues: array of string): Integer;
@@ -43,7 +47,7 @@ type
     // system
     function FLUSHDB: boolean;
     // raw execute
-    function ExecuteWithStringArrayResult(const RedisCommand: string): TArray<string>;
+    function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TArray<string>;
     function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
@@ -84,18 +88,18 @@ implementation
 
 function TRedisClientBase.BytesOfUnicode(const AUnicodeString: string): TBytes;
 begin
-  if FUnicode then
-    Result := TEncoding.Unicode.GetBytes(AUnicodeString)
-  else
-    Result := BytesOf(AUnicodeString);
+  // if FUnicode then
+  // Result := TEncoding.Unicode.GetBytes(AUnicodeString)
+  // else
+  Result := BytesOf(AUnicodeString);
 end;
 
 function TRedisClientBase.StringOfUnicode(const ABytes: TBytes): string;
 begin
-  if FUnicode then
-    Result := TEncoding.Unicode.GetString(ABytes)
-  else
-    Result := StringOf(ABytes);
+  // if FUnicode then
+  // Result := TEncoding.Unicode.GetString(ABytes)
+  // else
+  Result := StringOf(ABytes);
 end;
 
 end.
