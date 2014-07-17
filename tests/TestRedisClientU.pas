@@ -50,6 +50,8 @@ type
     procedure TestBLPOP;
     procedure TestBRPOP;
     procedure TestLREM;
+    procedure TestSELECT;
+//    procedure TestSUBSCRIBE;
   end;
 
 implementation
@@ -284,7 +286,7 @@ end;
 
 procedure TestRedisClient.TestMSET;
 begin
-  CheckTrue(FRedis.FLUSHDB);
+  FRedis.FLUSHDB;
   CheckTrue(FRedis.MSET(['one', '1', 'two', '2', 'three', '3']));
   ArrRes := FRedis.KEYS('*e*');
   CheckEquals(2, Length(ArrRes));
@@ -340,6 +342,19 @@ begin
   CheckEquals(False, FRedis.RPOP('mylist', Value));
 end;
 
+procedure TestRedisClient.TestSELECT;
+var
+  v: string;
+begin
+  FRedis.SELECT(0);
+  FRedis.&SET('db0', 'value0');
+  FRedis.SELECT(1);
+  CheckFalse(FRedis.GET('db0', v));
+  FRedis.SELECT(0);
+  FRedis.GET('db0', v);
+  CheckEquals('value0', v);
+end;
+
 procedure TestRedisClient.TestSetGet;
 var
   Res: string;
@@ -365,6 +380,33 @@ begin
   CheckTrue(FRedis.GET(bytesof('nome'), Res));
   CheckEquals('אטילעש', TEncoding.Unicode.GetString(Res));
 end;
+
+//procedure TestRedisClient.TestSUBSCRIBE;
+//var
+//  Rcv: NativeInt;
+//  MSG: string;
+//  X: NativeInt;
+//begin
+//  //not implemented
+//  {
+//  AtomicExchange(Rcv, 0);
+//  // It's used for immediate real-time messaging, not for history storage
+//  FRedis.SUBSCRIBE(['ch1', 'ch2'],
+//    procedure(Channel, Message: string)
+//    begin
+//      MSG := message;
+//      AtomicIncrement(Rcv, 1);
+//    end);
+//  }
+//  {
+//    while true do
+//    begin
+//    X := AtomicCmpExchange(Rcv, -1, -1);
+//    TThread.Sleep(100)
+//    end;
+//    CheckEquals('hello', MSG);
+//  }
+//end;
 
 initialization
 

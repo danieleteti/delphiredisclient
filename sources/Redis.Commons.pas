@@ -45,10 +45,16 @@ type
     function LREM(const AListKey: string; const ACount: Integer; const AValue: string): Integer;
 
     // system
-    function FLUSHDB: boolean;
+    procedure FLUSHDB;
+    procedure SELECT(const ADBIndex: Integer);
+
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TArray<string>;
     function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
+
+    // pubsub
+    procedure SUBSCRIBE(const AChannels: array of string; ACallback: TProc<string, string>);
+
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;

@@ -67,16 +67,26 @@ type
     function BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
     function BRPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
     function LREM(const AListKey: string; const ACount: Integer; const AValue: string): Integer;
+    // pubsub
+    procedure SUBSCRIBE(const AChannels: array of string; ACallback: TProc<string, string>);
     // system
-    function FLUSHDB: boolean;
+    procedure FLUSHDB;
+    procedure SELECT(const ADBIndex: Integer);
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TArray<string>;
     function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
+    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): string;
     procedure Disconnect;
     procedure SetCommandTimeout(const Timeout: Int32);
   end;
 
   { TRedisClient }
+
+procedure TRedisClient.SELECT(const ADBIndex: Integer);
+begin
+  NextCMD := GetCmdList('SELECT').Add(ADBIndex.ToString);
+  ExecuteWithStringResult(NextCMD);
+end;
 
 function TRedisClient.&SET(const AKey, AValue: TBytes): boolean;
 begin
@@ -164,6 +174,15 @@ begin
   Result := ParseArrayResponse(IsValidResponse);
 end;
 
+function TRedisClient.ExecuteWithStringResult(
+  const RedisCommand: IRedisCommand): string;
+begin
+  FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
+  Result := ParseSimpleStringResponse(FValidResponse);
+  if not FValidResponse then
+    raise ERedisException.Create('Not valid response');
+end;
+
 function TRedisClient.EXPIRE(const AKey: string;
   AExpireInSecond: UInt32): boolean;
 begin
@@ -188,12 +207,12 @@ begin
     raise ERedisException.Create('Not valid response');
 end;
 
-function TRedisClient.FLUSHDB: boolean;
+procedure TRedisClient.FLUSHDB;
 var
   Cmd: TRedisCommand;
 begin
   FTCPLibInstance.SendCmd(GetCmdList('FLUSHDB'));
-  Result := ParseSimpleStringResponse(FNotExists) = 'OK';
+  ParseSimpleStringResponse(FNotExists);
 end;
 
 function TRedisClient.GET(const AKey: string; out AValue: string): boolean;
@@ -431,6 +450,8 @@ begin
       Result := BytesOf(R.Substring(1));
     '-':
       raise ERedisException.Create(R.Substring(1));
+    ':':
+      Result := BytesOf(R.Substring(1));
     '$':
       begin
         HowMany := R.Substring(1).ToInteger;
@@ -499,6 +520,33 @@ end;
 procedure TRedisClient.SetCommandTimeout(const Timeout: Int32);
 begin
   FCommandTimeout := Timeout;
+end;
+
+procedure TRedisClient.SUBSCRIBE(const AChannels: array of string; ACallback: TProc<string, string>);
+var
+  I: Integer;
+  Channel, Value: string;
+  Arr: TArray<string>;
+begin
+  NextCMD := GetCmdList('SUBSCRIBE');
+  NextCMD.AddRange(AChannels);
+  FTCPLibInstance.SendCmd(NextCMD);
+  for I := 0 to Length(AChannels) - 1 do
+  begin
+    Arr := ParseArrayResponse(FValidResponse);
+    if (Arr[0].ToLower <> 'subscribe') or (Arr[1] <> AChannels[I]) then
+      raise ERedisException.Create('Invalid response: ' + string.Join('-', Arr))
+  end;
+  // all is fine, now read the callbacks message
+  while True do
+  begin
+    Arr := ParseArrayResponse(FValidResponse);
+    if (not FValidResponse) or (Arr[0] <> 'message') then
+      raise ERedisException.CreateFmt('Invalid reply: %s', [string.Join('-', Arr)]);
+    Channel := Arr[1];
+    Value := Arr[2];
+    ACallback(Channel, Value);
+  end;
 end;
 
 function TRedisClient.Tokenize(const ARedisCommand: string): TArray<string>;
