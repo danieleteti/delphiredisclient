@@ -19,7 +19,6 @@ type
   public
     constructor Create(AIsUnicode: Boolean); virtual;
     destructor Destroy; override;
-    function GetRedisToken(const Index: Integer): string;
     function GetToken(const Index: Integer): TBytes;
     procedure Clear;
     function Count: Integer;
@@ -82,22 +81,6 @@ function TRedisCommand.GetBinaryRedisToken(
   Index:
   Integer): TBytes;
 begin
-end;
-
-function TRedisCommand.GetRedisToken(
-  const
-  Index:
-  Integer): string;
-var
-  // I: Integer;
-  itm: string;
-  // bldr: TStringBuilder;
-  // C: Char;
-  // AnsiC: AnsiChar;
-begin
-  // if index = 0 then
-  // Exit(Items[0]); // this is always the command
-  // Result := '"' + Items[index].Replace('"', '\"', [rfReplaceAll]) + '"';
 end;
 
 function TRedisCommand.GetToken(

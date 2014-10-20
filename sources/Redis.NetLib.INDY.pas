@@ -26,13 +26,14 @@ type
 implementation
 
 uses
-  System.SysUtils, idGlobal;
+  System.SysUtils, idGlobal, IdIOHandler;
 
 { TRedisTCPLibINDY }
 
 procedure TRedisTCPLibINDY.Connect(const HostName: string; const Port: Word);
 begin
   FTCPClient.Connect(HostName, Port);
+  FTCPClient.IOHandler.MaxLineLength := IdMaxLineLengthDefault * 1000;
 end;
 
 constructor TRedisTCPLibINDY.Create;

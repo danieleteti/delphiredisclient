@@ -26,9 +26,6 @@ type
   private
     Res: string;
     ArrRes: TArray<string>;
-    DeletedKeys: Integer;
-    NotExists: Boolean;
-    FValidResponse: Boolean;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -51,11 +48,11 @@ type
     procedure TestBRPOP;
     procedure TestLREM;
     procedure TestSELECT;
-//    procedure TestSUBSCRIBE;
+    procedure TestMULTI;
+    // procedure TestSUBSCRIBE;
   end;
 
 implementation
-
 
 procedure TestRedisClient.SetUp;
 begin
@@ -163,17 +160,11 @@ begin
   CheckSimpleSet;
   ArrRes := FRedis.Tokenize('set  "no me" "da ni\ele"');
   CheckSimpleSet2;
-  try
-    ArrRes := FRedis.Tokenize('set nome "daniele');
-    Fail('invalid command not recognized');
-  except
-
-  end;
+  ExpectedException := ERedisException;
+  ArrRes := FRedis.Tokenize('set nome "daniele');
 end;
 
 procedure TestRedisClient.TestDelete;
-var
-  DeletedKeys: Integer;
 begin
   FRedis.&SET('NOME', 'Daniele');
   FRedis.&SET('COGNOME', 'Teti');
@@ -248,8 +239,6 @@ begin
 end;
 
 procedure TestRedisClient.TestLRANGE;
-var
-  Value: string;
 begin
   FRedis.DEL(['mylist']);
   FRedis.RPUSH('mylist', ['one', 'two', 'three', 'four', 'five']);
@@ -290,6 +279,21 @@ begin
   CheckTrue(FRedis.MSET(['one', '1', 'two', '2', 'three', '3']));
   ArrRes := FRedis.KEYS('*e*');
   CheckEquals(2, Length(ArrRes));
+end;
+
+procedure TestRedisClient.TestMULTI;
+var
+  v: String;
+begin
+  ArrRes := FRedis.MULTI(
+    procedure(Redis: IRedisClient)
+    begin
+      Redis.&SET('name', 'Daniele');
+      Redis.DEL(['name']);
+    end);
+  CheckEquals('OK', ArrRes[0]);
+  CheckEquals('1', ArrRes[1]);
+  CheckFalse(FRedis.GET('name', v));
 end;
 
 procedure TestRedisClient.TestRPOPLPUSH;
@@ -381,32 +385,32 @@ begin
   CheckEquals('אטילעש', TEncoding.Unicode.GetString(Res));
 end;
 
-//procedure TestRedisClient.TestSUBSCRIBE;
-//var
-//  Rcv: NativeInt;
-//  MSG: string;
-//  X: NativeInt;
-//begin
-//  //not implemented
-//  {
-//  AtomicExchange(Rcv, 0);
-//  // It's used for immediate real-time messaging, not for history storage
-//  FRedis.SUBSCRIBE(['ch1', 'ch2'],
-//    procedure(Channel, Message: string)
-//    begin
-//      MSG := message;
-//      AtomicIncrement(Rcv, 1);
-//    end);
-//  }
-//  {
-//    while true do
-//    begin
-//    X := AtomicCmpExchange(Rcv, -1, -1);
-//    TThread.Sleep(100)
-//    end;
-//    CheckEquals('hello', MSG);
-//  }
-//end;
+// procedure TestRedisClient.TestSUBSCRIBE;
+// var
+// Rcv: NativeInt;
+// MSG: string;
+// X: NativeInt;
+// begin
+// //not implemented
+// {
+// AtomicExchange(Rcv, 0);
+// // It's used for immediate real-time messaging, not for history storage
+// FRedis.SUBSCRIBE(['ch1', 'ch2'],
+// procedure(Channel, Message: string)
+// begin
+// MSG := message;
+// AtomicIncrement(Rcv, 1);
+// end);
+// }
+// {
+// while true do
+// begin
+// X := AtomicCmpExchange(Rcv, -1, -1);
+// TThread.Sleep(100)
+// end;
+// CheckEquals('hello', MSG);
+// }
+// end;
 
 initialization
 

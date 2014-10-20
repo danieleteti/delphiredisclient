@@ -18,6 +18,9 @@ type
   end;
 
   IRedisCommand = interface;
+  IRedisClient = interface;
+
+  TRedisTransactionProc = reference to procedure(Redis: IRedisClient);
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
@@ -26,6 +29,7 @@ type
     function GET(const AKey: string; out AValue: string): boolean; overload;
     function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
     function DEL(const AKeys: array of string): Integer;
+    function EXISTS(const AKey: string): boolean;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
     function INCR(const AKey: string): NativeInt;
@@ -38,31 +42,44 @@ type
     function LPUSHX(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
     function LLEN(const AListKey: string): Integer;
-    function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer): TArray<string>;
-    function RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
-    function BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
-    function BRPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
-    function LREM(const AListKey: string; const ACount: Integer; const AValue: string): Integer;
-
+    function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
+      : TArray<string>;
+    function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
+      var APoppedAndPushedElement: string): boolean;
+    function BLPOP(const AKeys: array of string; const ATimeout: Int32;
+      out Value: TArray<string>): boolean;
+    function BRPOP(const AKeys: array of string; const ATimeout: Int32;
+      out Value: TArray<string>): boolean;
+    function LREM(const AListKey: string; const ACount: Integer;
+      const AValue: string): Integer;
+    // sets
+    function SADD(const AKey, AValue: TBytes): Integer;
+    function SREM(const AKey, AValue: TBytes): Integer;
+    function SMEMBERS(const AKey: string): TArray<string>;
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
 
     // raw execute
-    function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TArray<string>;
-    function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
+    function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
+      : TArray<string>;
+    function ExecuteWithIntegerResult(const RedisCommand: string)
+      : TArray<string>;
 
     // pubsub
-    procedure SUBSCRIBE(const AChannels: array of string; ACallback: TProc<string, string>);
-
+    procedure SUBSCRIBE(const AChannels: array of string;
+      ACallback: TProc<string, string>);
+    // transactions
+    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<String>;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
+    // client
+    procedure ClientSetName(const ClientName: String);
   end;
 
   IRedisCommand = interface
     ['{79C43B91-604F-49BC-8EB8-35F092258833}']
-    function GetRedisToken(const Index: Integer): string;
     function GetToken(const Index: Integer): TBytes;
     procedure Clear;
     function Count: Integer;
@@ -81,7 +98,8 @@ type
     procedure WriteCrLf(const Bytes: TBytes);
     procedure SendCmd(const Values: IRedisCommand);
     function Receive(const Timeout: UInt32): string;
-    function ReceiveBytes(const ACount: Int64; const Timeout: UInt32): System.TArray<System.Byte>;
+    function ReceiveBytes(const ACount: Int64; const Timeout: UInt32)
+      : System.TArray<System.Byte>;
     procedure Disconnect;
   end;
 
