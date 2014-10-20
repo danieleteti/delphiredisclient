@@ -80,6 +80,7 @@ type
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;
       ACallback: TProc<string, string>);
+    function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // sets
     function SADD(const AKey, AValue: TBytes): Integer;
     function SREM(const AKey, AValue: TBytes): Integer;
@@ -536,6 +537,16 @@ begin
   else
     raise ERedisException.Create('ParseStringResponse Error');
   end;
+end;
+
+function TRedisClient.PUBLISH(const AChannel: string; AMessage: string)
+  : Integer;
+begin
+  NextCMD := GetCmdList('PUBLISH');
+  NextCMD.Add(AChannel);
+  NextCMD.Add(AMessage);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse;
 end;
 
 function TRedisClient.RPOP(const AListKey: string; var Value: string): boolean;

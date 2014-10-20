@@ -69,6 +69,7 @@ type
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;
       ACallback: TProc<string, string>);
+    function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // transactions
     function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<String>;
     // non sys
