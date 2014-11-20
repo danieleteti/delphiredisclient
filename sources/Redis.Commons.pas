@@ -5,9 +5,18 @@ interface
 uses
   System.SysUtils;
 
+var
+  RedisDefaultSubscribeTimeout: UInt32 = 1000;
+
 type
   ERedisException = class(Exception)
 
+  end;
+
+  TRedisConsts = class sealed
+  const
+    TTL_KEY_DOES_NOT_EXIST = -2;
+    TTL_KEY_IS_NOT_VOLATILE = -1;
   end;
 
   TRedisClientBase = class abstract(TInterfacedObject)
@@ -21,14 +30,20 @@ type
   IRedisClient = interface;
 
   TRedisTransactionProc = reference to procedure(Redis: IRedisClient);
+  TRedisTimeoutCallback = reference to procedure(var AContinue: boolean);
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
+    function &SET(const AKey: String; AValue: TBytes): boolean; overload;
+    function SETNX(const AKey, AValue: string): boolean; overload;
+    function SETNX(const AKey, AValue: TBytes): boolean; overload;
     function GET(const AKey: string; out AValue: string): boolean; overload;
     function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
+    function GET(const AKey: String; out AValue: TBytes): boolean; overload;
     function DEL(const AKeys: array of string): Integer;
+    function TTL(const AKey: string): Integer;
     function EXISTS(const AKey: string): boolean;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
@@ -68,15 +83,18 @@ type
 
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;
-      ACallback: TProc<string, string>);
+      ACallback: TProc<string, string>;
+      ATimeoutCallback: TRedisTimeoutCallback);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // transactions
     function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<String>;
+    procedure DISCARD;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
     // client
     procedure ClientSetName(const ClientName: String);
+    procedure SetCommandTimeout(const Timeout: Int32);
   end;
 
   IRedisCommand = interface
@@ -102,6 +120,7 @@ type
     function ReceiveBytes(const ACount: Int64; const Timeout: UInt32)
       : System.TArray<System.Byte>;
     procedure Disconnect;
+    function LastReadWasTimedOut: boolean;
   end;
 
 const

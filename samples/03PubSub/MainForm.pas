@@ -1,0 +1,109 @@
+unit MainForm;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, redis.client, redis.commons,
+  redis.netlib.indy, System.threading,
+  Vcl.StdCtrls;
+
+type
+  TForm2 = class(TForm)
+    Memo1: TMemo;
+    Edit2: TEdit;
+    Label1: TLabel;
+    procedure FormCreate(Sender: TObject);
+    procedure Edit2KeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+  private
+    _redis: IRedisClient;
+    FTask: ITask;
+    FClosing: Boolean;
+    procedure SendChatMessage;
+    procedure OnMessage(const ANickName, AMessage: String);
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Form2: TForm2;
+
+implementation
+
+uses System.json;
+{$R *.dfm}
+
+procedure TForm2.Edit2KeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = VK_RETURN then
+  begin
+    SendChatMessage;
+    Key := 0;
+    Edit2.Clear;
+  end;
+end;
+
+procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  FClosing := True;
+end;
+
+procedure TForm2.FormCreate(Sender: TObject);
+begin
+  FClosing := False;
+  Label1.Caption := InputBox('Chat user name',
+    'What is your user name in this chat?', 'd.teti' + (100 + Random(999))
+    .ToString);
+  _redis := NewRedisClient();
+  FTask := TTask.Create(
+    procedure
+    var
+      r: IRedisClient;
+    begin
+      r := NewRedisClient;
+      r.SUBSCRIBE(['chat'],
+        procedure(channel, message: string)
+        var
+          jobj: TJSONObject;
+          msg, nickname: string;
+        begin
+          jobj := TJSONObject.ParseJSONValue(message) as TJSONObject;
+          nickname := jobj.GetValue<TJSONString>('nickname').Value;
+          msg := jobj.GetValue<TJSONString>('message').Value;
+          TThread.Synchronize(nil,
+            procedure
+            begin
+              Self.OnMessage(nickname, msg);
+            end);
+        end,
+        procedure(var AContinue: Boolean)
+        begin
+          AContinue := Assigned(Self) and (not FClosing)
+        end);
+    end).Start;
+end;
+
+procedure TForm2.OnMessage(const ANickName, AMessage: String);
+begin
+  Memo1.Lines.Add('[' + ANickName + '] ' + DateTimeToStr(now));
+  Memo1.Lines.Add(AMessage);
+  Memo1.Lines.Add('---');
+end;
+
+procedure TForm2.SendChatMessage;
+var
+  jobj: TJSONObject;
+begin
+  jobj := TJSONObject.Create;
+  try
+    jobj.AddPair('nickname', Label1.Caption).AddPair('message', Edit2.Text);
+    _redis.PUBLISH('chat', jobj.ToString);
+  finally
+    jobj.Free;
+  end;
+end;
+
+end.

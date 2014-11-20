@@ -39,7 +39,7 @@ end;
 
 function TRedisCommand.Add(AString: string): IRedisCommand;
 begin
-  FParts.Add(BytesOfUnicode(AString));
+  FParts.Add(BytesOf(AString));
   Result := Self;
 end;
 

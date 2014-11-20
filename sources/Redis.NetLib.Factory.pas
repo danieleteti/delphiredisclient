@@ -18,6 +18,7 @@ type
     function Receive(const Timeout: UInt32): string; virtual; abstract;
     function ReceiveBytes(const ACount: Int64; const Timeout: UInt32): System.TArray<System.Byte>; virtual; abstract;
     procedure Disconnect; virtual; abstract;
+    function LastReadWasTimedOut: boolean; virtual; abstract;
   end;
 
   TRedisTCPLibClass = class of TRedisNetLibAdapter;
