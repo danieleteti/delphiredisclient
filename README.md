@@ -1,7 +1,7 @@
 Delphi Redis client
 =================
 
-Redis client for Delphi XE6 and XE5
+Redis client for Delphi XE8, XE7, XE6 and XE5 (should works also with older versions)
 
 
 This client is able to send all Redis commands and read the response using an internal parser. 
