@@ -196,8 +196,6 @@ begin
 end;
 
 function TRedisClient.DEL(const AKeys: array of string): Integer;
-var
-  R: string;
 begin
   NextCMD := GetCmdList('DEL');
   NextCMD.AddRange(AKeys);
@@ -249,8 +247,6 @@ begin
 end;
 
 function TRedisClient.EXISTS(const AKey: string): boolean;
-var
-  R: string;
 begin
   NextCMD := GetCmdList('EXISTS');
   NextCMD.Add(AKey);
@@ -481,7 +477,6 @@ function TRedisClient.ParseIntegerResponse: NativeInt;
 var
   R: string;
   I: Integer;
-  IsTimeout: boolean;
 begin
   if FInTransaction then
   begin
@@ -513,7 +508,6 @@ function TRedisClient.ParseSimpleStringResponse(var AValidResponse
 var
   R: string;
   HowMany: Integer;
-  IsTimeout: boolean;
 begin
   AValidResponse := True;
   NextToken(R);
