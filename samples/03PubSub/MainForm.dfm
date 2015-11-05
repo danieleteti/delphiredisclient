@@ -39,8 +39,6 @@ object Form2: TForm2
     ParentFont = False
     ReadOnly = True
     TabOrder = 0
-    ExplicitWidth = 345
-    ExplicitHeight = 405
   end
   object Edit2: TEdit
     Left = 8
@@ -54,7 +52,5 @@ object Form2: TForm2
     TabOrder = 1
     TextHint = 'Write your message here...'
     OnKeyUp = Edit2KeyUp
-    ExplicitTop = 442
-    ExplicitWidth = 345
   end
 end

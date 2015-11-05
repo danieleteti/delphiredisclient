@@ -30,7 +30,7 @@ type
   IRedisClient = interface;
 
   TRedisTransactionProc = reference to procedure(Redis: IRedisClient);
-  TRedisTimeoutCallback = reference to procedure(var AContinue: boolean);
+  TRedisTimeoutCallback = reference to function: Boolean;
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']

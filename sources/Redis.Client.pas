@@ -699,8 +699,7 @@ begin
     begin
       if Assigned(ATimeoutCallback) then
       begin
-        BContinue := True;
-        ATimeoutCallback(BContinue);
+        BContinue := ATimeoutCallback();
         if not BContinue then
           break;
       end;

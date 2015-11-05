@@ -1,3 +1,4 @@
+// JCL_DEBUG_EXPERT_INSERTJDBG OFF
 program CmdsSample1;
 
 {$APPTYPE CONSOLE}
@@ -6,7 +7,7 @@ program CmdsSample1;
 
 
 uses
-  System.SysUtils, Redis.Client, Redis.NetLib.INDY;
+  System.SysUtils, Redis.Client, Redis.NetLib.INDY, Redis.Commons;
 
 var
   Redis: IRedisClient;
@@ -15,7 +16,7 @@ var
 begin
   try
     Redis := NewRedisClient('localhost');
-    Redis.&SET(bytesof('firstname'), bytesof('Daniele'));
+    Redis.&SET('firstname', 'Daniele');
     Redis.GET('firstname', Value);
     WriteLn('key firstname, value ', Value);
     WriteLn('DEL firstname');
