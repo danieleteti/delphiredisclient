@@ -22,34 +22,36 @@ type
 
   TestRedisClient = class(TTestCase)
   strict private
-    FRedis: IRedisClient;
+	 FRedis: IRedisClient;
   private
-    Res: string;
-    ArrRes: TArray<string>;
+	 Res: string;
+	 ArrRes: TArray<string>;
   public
-    procedure SetUp; override;
-    procedure TearDown; override;
+	 procedure SetUp; override;
+	 procedure TearDown; override;
   published
-    procedure TestCommandParser;
-    procedure TestExecuteWithStringArrayResponse;
-    procedure TestSetGet;
-    procedure TestSetGetUnicode;
-    procedure TestMSET;
-    procedure TestINCR;
-    procedure TestEXPIRE;
-    procedure TestDelete;
-    procedure TestRPUSH_RPOP;
-    procedure TestRPUSHX_LPUSHX;
-    procedure TestLPUSH_LPOP;
-    procedure TestLRANGE;
-    procedure TestLLEN;
-    procedure TestRPOPLPUSH;
-    procedure TestBLPOP;
-    procedure TestBRPOP;
-    procedure TestLREM;
-    procedure TestSELECT;
-    procedure TestMULTI;
-    // procedure TestSUBSCRIBE;
+	 procedure TestCommandParser;
+	 procedure TestExecuteWithStringArrayResponse;
+	 procedure TestSetGet;
+	 procedure TestSetGetUnicode;
+	 procedure TestMSET;
+	 procedure TestINCR;
+	 procedure TestEXPIRE;
+	 procedure TestDelete;
+	 procedure TestRPUSH_RPOP;
+	 procedure TestRPUSHX_LPUSHX;
+	 procedure TestLPUSH_LPOP;
+	 procedure TestLRANGE;
+	 procedure TestLLEN;
+	 procedure TestRPOPLPUSH;
+	 procedure TestBLPOP;
+	 procedure TestBRPOP;
+	 procedure TestLREM;
+	 procedure TestSELECT;
+	 procedure TestMULTI;
+	 procedure TestHSetHGet;
+	 procedure TestHSetHGetUnicode;
+	 // procedure TestSUBSCRIBE;
   end;
 
 implementation
@@ -198,6 +200,34 @@ begin
   CheckFalse(FRedis.GET('daniele', v));
 end;
 
+procedure TestRedisClient.TestHSetHGet;
+const
+	C_KEY = '1000';
+	C_field = 'leandro';
+	C_VALUE = 'teste';
+var
+	aResult : string;
+begin
+	FRedis.DEL([C_KEY]);
+	FRedis.HSET(C_KEY, C_field, C_VALUE);
+	FRedis.HGET(C_KEY, C_field, aResult);
+	CheckEqualsString(C_VALUE, aResult);
+end;
+
+procedure TestRedisClient.TestHSetHGetUnicode;
+const
+	C_KEY = '1000';
+	C_field = 'leandro';
+	C_VALUE = 'teste';
+var
+	aResult : Tbytes;
+begin
+	FRedis.DEL([C_KEY]);
+	FRedis.HSET(C_KEY, C_field, TEncoding.Unicode.GetBytes(C_VALUE));
+	FRedis.HGET(C_KEY, C_field, aResult);
+	CheckEqualsString(C_VALUE, TEncoding.Unicode.GetString(aResult));
+end;
+
 procedure TestRedisClient.TestINCR;
 begin
   FRedis.&SET('daniele', '-1');
@@ -286,7 +316,7 @@ var
   v: String;
 begin
   ArrRes := FRedis.MULTI(
-    procedure(Redis: IRedisClient)
+	 procedure(Redis: IRedisClient)
     begin
       Redis.&SET('name', 'Daniele');
       Redis.DEL(['name']);

@@ -30,44 +30,50 @@ type
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseSimpleStringResponseAsByte(var AValidResponse
       : boolean): TBytes;
-    function ParseIntegerResponse: NativeInt;
-    function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
-    procedure CheckResponseType(Expected, Actual: string);
+	 function ParseIntegerResponse: NativeInt;
+	 function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
+	 procedure CheckResponseType(Expected, Actual: string);
   protected
-    procedure Connect;
-    function GetCmdList(const Cmd: string): IRedisCommand;
-    function NextToken(out Msg: String): boolean;
-    function NextBytes(const ACount: UInt32): TBytes;
-    /// //
-    function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
-      AKeys: array of string; ATimeout: Int32; var AIsValidResponse: boolean)
-      : TArray<string>;
+	 procedure Connect;
+	 function GetCmdList(const Cmd: string): IRedisCommand;
+	 function NextToken(out Msg: String): boolean;
+	 function NextBytes(const ACount: UInt32): TBytes;
+	 /// //
+	 function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
+		AKeys: array of string; ATimeout: Int32; var AIsValidResponse: boolean)
+		: TArray<string>;
 
   public
-    function Tokenize(const ARedisCommand: string): TArray<string>;
-    constructor Create(TCPLibInstance: IRedisNetLibAdapter;
-      const HostName: string; const Port: Word;
-      const UseUnicodeString: boolean);
-    destructor Destroy; override;
-    /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
-    function &SET(const AKey, AValue: string): boolean; overload;
-    function &SET(const AKey, AValue: TBytes): boolean; overload;
-    function &SET(const AKey: String; AValue: TBytes): boolean; overload;
-    function SETNX(const AKey, AValue: string): boolean; overload;
-    function SETNX(const AKey, AValue: TBytes): boolean; overload;
-    function GET(const AKey: string; out AValue: string): boolean; overload;
-    function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
-    function GET(const AKey: String; out AValue: TBytes): boolean; overload;
-    function TTL(const AKey: string): Integer;
-    function DEL(const AKeys: array of string): Integer;
-    function EXISTS(const AKey: string): boolean;
-    function INCR(const AKey: string): NativeInt;
-    function MSET(const AKeysValues: array of string): boolean;
-    function KEYS(const AKeyPattern: string): TArray<string>;
-    function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
-    // lists
-    function RPUSH(const AListKey: string; AValues: array of string): Integer;
-    function RPUSHX(const AListKey: string; AValues: array of string): Integer;
+	 function Tokenize(const ARedisCommand: string): TArray<string>;
+	 constructor Create(TCPLibInstance: IRedisNetLibAdapter;
+		const HostName: string; const Port: Word;
+		const UseUnicodeString: boolean);
+	 destructor Destroy; override;
+	 /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
+	 function &SET(const AKey, AValue: string): boolean; overload;
+	 function &SET(const AKey, AValue: TBytes): boolean; overload;
+	 function &SET(const AKey: String; AValue: TBytes): boolean; overload;
+	 function SETNX(const AKey, AValue: string): boolean; overload;
+	 function SETNX(const AKey, AValue: TBytes): boolean; overload;
+	 function GET(const AKey: string; out AValue: string): boolean; overload;
+	 function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
+	 function GET(const AKey: String; out AValue: TBytes): boolean; overload;
+	 function TTL(const AKey: string): Integer;
+	 function DEL(const AKeys: array of string): Integer;
+	 function EXISTS(const AKey: string): boolean;
+	 function INCR(const AKey: string): NativeInt;
+	 function MSET(const AKeysValues: array of string): boolean;
+	 function KEYS(const AKeyPattern: string): TArray<string>;
+	 function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
+
+	 //hash 
+	 function HSET(const AKey, aField: String; AValue: string): integer; overload;
+	 function HSET(const AKey, aField: String; AValue: TBytes): integer; overload;
+	 function HGET(const AKey, AField: String; out AValue: TBytes): boolean;  overload;
+	 function HGET(const AKey, AField: String; out AValue: string): boolean;  overload; 
+	 // lists
+	 function RPUSH(const AListKey: string; AValues: array of string): Integer;
+	 function RPUSHX(const AListKey: string; AValues: array of string): Integer;
     function RPOP(const AListKey: string; var Value: string): boolean;
     function LPUSH(const AListKey: string; AValues: array of string): Integer;
     function LPUSHX(const AListKey: string; AValues: array of string): Integer;
@@ -309,6 +315,43 @@ begin
   FRedisCmdParts.Clear;
   Result := FRedisCmdParts;
   Result.SetCommand(Cmd);
+end;
+
+function TRedisClient.HSET(const AKey, aField: String; AValue: string): integer;
+begin
+	Result := HSET(AKey, aField, BytesOfUnicode(AValue));
+end;
+
+function TRedisClient.HGET(const AKey, AField: String;
+  out AValue: TBytes): boolean;
+var
+	Pieces: IRedisCommand;
+begin
+	Pieces := GetCmdList('HGET');
+	Pieces.Add(AKey);
+	Pieces.Add(AField);
+	FTCPLibInstance.SendCmd(Pieces);
+	AValue := ParseSimpleStringResponseAsByte(FValidResponse);
+	Result := FValidResponse;
+end;
+
+function TRedisClient.HGET(const AKey, AField: String;
+  out AValue: string): boolean;
+var
+	Resp: TBytes;
+begin
+	Result := HGET(AKey, AField, Resp);
+	AValue := StringOfUnicode(Resp); 
+end;
+
+function TRedisClient.HSET(const AKey, aField: String; AValue: TBytes): integer;
+begin
+	NextCMD := GetCmdList('HSET');
+	NextCMD.Add(AKey);
+	NextCMD.Add(aField);
+	NextCMD.Add(AValue);  
+	FTCPLibInstance.SendCmd(NextCMD);
+	Result := ParseIntegerResponse;
 end;
 
 function TRedisClient.INCR(const AKey: string): NativeInt;
