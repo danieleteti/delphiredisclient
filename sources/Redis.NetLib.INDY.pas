@@ -78,7 +78,7 @@ end;
 
 procedure TRedisTCPLibINDY.Send(const Value: string);
 begin
-  FTCPClient.IOHandler.WriteLn(AnsiString(Value));
+  FTCPClient.IOHandler.WriteLn(Value);
   // , IndyTextEncoding_Default);
 end;
 
