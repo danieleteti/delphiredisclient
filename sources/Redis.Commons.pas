@@ -87,7 +87,7 @@ type
       : TArray<string>;
     function ExecuteWithIntegerResult(const RedisCommand: string)
       : TArray<string>;
-
+    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): string;
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;
       ACallback: TProc<string, string>;

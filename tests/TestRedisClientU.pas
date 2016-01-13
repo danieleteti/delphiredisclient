@@ -22,36 +22,37 @@ type
 
   TestRedisClient = class(TTestCase)
   strict private
-	 FRedis: IRedisClient;
+    FRedis: IRedisClient;
   private
-	 Res: string;
-	 ArrRes: TArray<string>;
+    Res: string;
+    ArrRes: TArray<string>;
   public
-	 procedure SetUp; override;
-	 procedure TearDown; override;
+    procedure SetUp; override;
+    procedure TearDown; override;
   published
-	 procedure TestCommandParser;
-	 procedure TestExecuteWithStringArrayResponse;
-	 procedure TestSetGet;
-	 procedure TestSetGetUnicode;
-	 procedure TestMSET;
-	 procedure TestINCR;
-	 procedure TestEXPIRE;
-	 procedure TestDelete;
-	 procedure TestRPUSH_RPOP;
-	 procedure TestRPUSHX_LPUSHX;
-	 procedure TestLPUSH_LPOP;
-	 procedure TestLRANGE;
-	 procedure TestLLEN;
-	 procedure TestRPOPLPUSH;
-	 procedure TestBLPOP;
-	 procedure TestBRPOP;
-	 procedure TestLREM;
-	 procedure TestSELECT;
-	 procedure TestMULTI;
-	 procedure TestHSetHGet;
-	 procedure TestHSetHGetUnicode;
-	 // procedure TestSUBSCRIBE;
+    procedure TestCommandParser;
+    procedure TestExecuteWithStringArrayResponse;
+    procedure TestSetGet;
+    procedure TestSetGetUnicode;
+    procedure TestMSET;
+    procedure TestINCR;
+    procedure TestEXPIRE;
+    procedure TestDelete;
+    procedure TestRPUSH_RPOP;
+    procedure TestRPUSHX_LPUSHX;
+    procedure TestLPUSH_LPOP;
+    procedure TestLRANGE;
+    procedure TestLLEN;
+    procedure TestRPOPLPUSH;
+    procedure TestBLPOP;
+    procedure TestBRPOP;
+    procedure TestLREM;
+    procedure TestSELECT;
+    procedure TestMULTI;
+    procedure TestHSetHGet;
+    procedure TestAUTH;
+    procedure TestHSetHGetUnicode;
+    // procedure TestSUBSCRIBE;
   end;
 
 implementation
@@ -64,6 +65,17 @@ end;
 procedure TestRedisClient.TearDown;
 begin
   FRedis := nil;
+end;
+
+procedure TestRedisClient.TestAUTH;
+var
+  FCmd: IRedisCommand;
+begin
+  // the TEST Redis instance is not protected with a password
+  FCmd := NewRedisCommand('AUTH');
+  FCmd.Add('foo');
+  ExpectedException := ERedisException;
+  FRedis.ExecuteWithStringResult(FCmd);
 end;
 
 procedure TestRedisClient.TestBLPOP;
@@ -202,30 +214,30 @@ end;
 
 procedure TestRedisClient.TestHSetHGet;
 const
-	C_KEY = '1000';
-	C_field = 'leandro';
-	C_VALUE = 'teste';
+  C_KEY = '1000';
+  C_field = 'leandro';
+  C_VALUE = 'teste';
 var
-	aResult : string;
+  aResult: string;
 begin
-	FRedis.DEL([C_KEY]);
-	FRedis.HSET(C_KEY, C_field, C_VALUE);
-	FRedis.HGET(C_KEY, C_field, aResult);
-	CheckEqualsString(C_VALUE, aResult);
+  FRedis.DEL([C_KEY]);
+  FRedis.HSET(C_KEY, C_field, C_VALUE);
+  FRedis.HGET(C_KEY, C_field, aResult);
+  CheckEqualsString(C_VALUE, aResult);
 end;
 
 procedure TestRedisClient.TestHSetHGetUnicode;
 const
-	C_KEY = '1000';
-	C_field = 'leandro';
-	C_VALUE = 'teste';
+  C_KEY = '1000';
+  C_field = 'leandro';
+  C_VALUE = 'teste';
 var
-	aResult : Tbytes;
+  aResult: Tbytes;
 begin
-	FRedis.DEL([C_KEY]);
-	FRedis.HSET(C_KEY, C_field, TEncoding.Unicode.GetBytes(C_VALUE));
-	FRedis.HGET(C_KEY, C_field, aResult);
-	CheckEqualsString(C_VALUE, TEncoding.Unicode.GetString(aResult));
+  FRedis.DEL([C_KEY]);
+  FRedis.HSET(C_KEY, C_field, TEncoding.Unicode.GetBytes(C_VALUE));
+  FRedis.HGET(C_KEY, C_field, aResult);
+  CheckEqualsString(C_VALUE, TEncoding.Unicode.GetString(aResult));
 end;
 
 procedure TestRedisClient.TestINCR;
@@ -316,7 +328,7 @@ var
   v: String;
 begin
   ArrRes := FRedis.MULTI(
-	 procedure(Redis: IRedisClient)
+    procedure(Redis: IRedisClient)
     begin
       Redis.&SET('name', 'Daniele');
       Redis.DEL(['name']);
@@ -408,7 +420,7 @@ end;
 
 procedure TestRedisClient.TestSetGetUnicode;
 var
-  Res: TBytes;
+  Res: Tbytes;
 begin
   CheckTrue(FRedis.&SET(bytesof('nome'), TEncoding.Unicode.GetBytes('אטילעש')));
   CheckTrue(FRedis.GET(bytesof('nome'), Res));
