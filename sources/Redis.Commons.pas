@@ -52,6 +52,8 @@ type
 
 	 // hash
 	 function HSET(const AKey, aField: String; AValue: string): integer; overload;
+   procedure HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
+   function HMGET(const AKey: String; aFields: TArray<String>): TArray<String>;
 	 function HSET(const AKey, aField: String; AValue: TBytes): integer; overload;
 	 function HGET(const AKey, AField: String; out AValue: TBytes): boolean;  overload;
 	 function HGET(const AKey, AField: String; out AValue: string): boolean;  overload;
@@ -86,7 +88,9 @@ type
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
       : TArray<string>;
     function ExecuteWithIntegerResult(const RedisCommand: string)
-      : TArray<string>;
+      : TArray<string>; overload;
+    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
+      : Int64; overload;
     function ExecuteWithStringResult(const RedisCommand: IRedisCommand): string;
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;

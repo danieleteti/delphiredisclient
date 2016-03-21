@@ -50,6 +50,7 @@ type
     procedure TestSELECT;
     procedure TestMULTI;
     procedure TestHSetHGet;
+    procedure TestHMSetHMGet;
     procedure TestAUTH;
     procedure TestHSetHGetUnicode;
     // procedure TestSUBSCRIBE;
@@ -210,6 +211,23 @@ begin
   CheckEquals('1234', v);
   TThread.Sleep(2000);
   CheckFalse(FRedis.GET('daniele', v));
+end;
+
+procedure TestRedisClient.TestHMSetHMGet;
+const
+  C_KEY = 'thekey';
+var
+  aResult: string;
+  lValues: TArray<String>;
+begin
+  FRedis.DEL([C_KEY]);
+  FRedis.HMSET(C_KEY, ['field1', 'field2', 'field3'],
+    ['value1', 'value2', 'value3']);
+  lValues := FRedis.HMGET(C_KEY, ['field1', 'field2', 'field3']);
+
+  CheckEqualsString('value1', lValues[0]);
+  CheckEqualsString('value2', lValues[1]);
+  CheckEqualsString('value3', lValues[2]);
 end;
 
 procedure TestRedisClient.TestHSetHGet;
