@@ -36,7 +36,7 @@ type
   protected
     procedure Connect;
     function GetCmdList(const Cmd: string): IRedisCommand;
-    function NextToken(out Msg: String): boolean;
+    procedure NextToken(out Msg: String);
     function NextBytes(const ACount: UInt32): TBytes;
     /// //
     function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
@@ -181,8 +181,6 @@ begin
 end;
 
 procedure TRedisClient.ClientSetName(const ClientName: String);
-var
-  R: string;
 begin
   NextCMD := GetCmdList('CLIENT');
   NextCMD.Add('SETNAME');
@@ -516,7 +514,7 @@ begin
   end;
 end;
 
-function TRedisClient.NextToken(out Msg: String): boolean;
+procedure TRedisClient.NextToken(out Msg: String);
 begin
   Msg := FTCPLibInstance.Receive(FCommandTimeout);
   FIsTimeout := FTCPLibInstance.LastReadWasTimedOut;
@@ -571,12 +569,12 @@ var
   R: string;
   I: Integer;
 begin
+  Result := -1;
   if FInTransaction then
   begin
     R := ParseSimpleStringResponse(FValidResponse);
     if R <> 'QUEUED' then
       raise ERedisException.Create(R);
-    Result := -1;
     Exit;
   end;
 

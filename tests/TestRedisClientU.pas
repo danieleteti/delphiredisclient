@@ -217,7 +217,6 @@ procedure TestRedisClient.TestHMSetHMGet;
 const
   C_KEY = 'thekey';
 var
-  aResult: string;
   lValues: TArray<String>;
 begin
   FRedis.DEL([C_KEY]);

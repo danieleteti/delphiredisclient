@@ -9,7 +9,6 @@ type
   TRedisCommand = class(TRedisClientBase, IRedisCommand)
   private
     FCommandIsSet: Boolean;
-    function GetBinaryRedisToken(const Index: Integer): TBytes;
   protected
     FParts: TList<TBytes>;
 
@@ -74,13 +73,6 @@ destructor TRedisCommand.Destroy;
 begin
   FParts.Free;
   inherited;
-end;
-
-function TRedisCommand.GetBinaryRedisToken(
-  const
-  Index:
-  Integer): TBytes;
-begin
 end;
 
 function TRedisCommand.GetToken(
