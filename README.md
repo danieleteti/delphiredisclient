@@ -102,7 +102,7 @@ end.
 
 Each feature is unit tested.
 
-This project is related to the DelphiMVCFramework project and will be used by it (https://code.google.com/p/delphimvcframework/)
+This project is related to the DelphiMVCFramework project and will be used by it (https://github.com/danieleteti/delphimvcframework)
 
 To discuss about DelphiMVCProject or DelphiRedisClient, use the facebook group https://www.facebook.com/groups/delphimvcframework/
 
