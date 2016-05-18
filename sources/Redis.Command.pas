@@ -100,14 +100,14 @@ begin
   L := TList<Byte>.Create;
   try
     L.Add(ASTERISK_BYTE); // bytesof('*')[0]);
-    L.AddRange(bytesof(IntToStr(Count)));
+    L.AddRange(BytesOf(IntToStr(Count)));
     L.Add(Byte(#13));
     L.Add(Byte(#10));
 
     for I := 0 to Count - 1 do
     begin
       L.Add(DOLLAR_BYTE); // bytesof('$')[0]);
-      L.AddRange(bytesof(IntToStr(Length(FParts[I]))));
+      L.AddRange(BytesOf(IntToStr(Length(FParts[I]))));
       L.Add(Byte(#13));
       L.Add(Byte(#10));
       L.AddRange(FParts[I]);

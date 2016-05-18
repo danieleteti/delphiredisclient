@@ -30,42 +30,42 @@ type
   IRedisClient = interface;
 
   TRedisTransactionProc = reference to procedure(Redis: IRedisClient);
-  TRedisTimeoutCallback = reference to function: Boolean;
+  TRedisTimeoutCallback = reference to function: boolean;
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
     function &SET(const AKey: String; AValue: TBytes): boolean; overload;
-	 function SETNX(const AKey, AValue: string): boolean; overload;
-	 function SETNX(const AKey, AValue: TBytes): boolean; overload;
-	 function GET(const AKey: string; out AValue: string): boolean; overload;
-	 function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
-	 function GET(const AKey: String; out AValue: TBytes): boolean; overload;
-	 function DEL(const AKeys: array of string): Integer;
-	 function TTL(const AKey: string): Integer;
-	 function EXISTS(const AKey: string): boolean;
-	 function MSET(const AKeysValues: array of string): boolean;
-	 function KEYS(const AKeyPattern: string): TArray<string>;
-	 function INCR(const AKey: string): NativeInt;
-	 function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
+    function SETNX(const AKey, AValue: string): boolean; overload;
+    function SETNX(const AKey, AValue: TBytes): boolean; overload;
+    function GET(const AKey: string; out AValue: string): boolean; overload;
+    function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
+    function GET(const AKey: String; out AValue: TBytes): boolean; overload;
+    function DEL(const AKeys: array of string): Integer;
+    function TTL(const AKey: string): Integer;
+    function EXISTS(const AKey: string): boolean;
+    function MSET(const AKeysValues: array of string): boolean;
+    function KEYS(const AKeyPattern: string): TArray<string>;
+    function INCR(const AKey: string): NativeInt;
+    function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
 
-	 // hash
-	 function HSET(const AKey, aField: String; AValue: string): integer; overload;
-   procedure HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
-   function HMGET(const AKey: String; aFields: TArray<String>): TArray<String>;
-	 function HSET(const AKey, aField: String; AValue: TBytes): integer; overload;
-	 function HGET(const AKey, AField: String; out AValue: TBytes): boolean;  overload;
-	 function HGET(const AKey, AField: String; out AValue: string): boolean;  overload;
+    // hash
+    function HSET(const AKey, aField: String; AValue: string): Integer; overload;
+    procedure HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
+    function HMGET(const AKey: String; aFields: TArray<String>): TArray<String>;
+    function HSET(const AKey, aField: String; AValue: TBytes): Integer; overload;
+    function HGET(const AKey, aField: String; out AValue: TBytes): boolean; overload;
+    function HGET(const AKey, aField: String; out AValue: string): boolean; overload;
 
-	 // lists
-	 function RPUSH(const AListKey: string; AValues: array of string): Integer;
-	 function RPUSHX(const AListKey: string; AValues: array of string): Integer;
-	 function RPOP(const AListKey: string; var Value: string): boolean;
-	 function LPUSH(const AListKey: string; AValues: array of string): Integer;
-	 function LPUSHX(const AListKey: string; AValues: array of string): Integer;
-	 function LPOP(const AListKey: string; out Value: string): boolean;
-	 function LLEN(const AListKey: string): Integer;
+    // lists
+    function RPUSH(const AListKey: string; AValues: array of string): Integer;
+    function RPUSHX(const AListKey: string; AValues: array of string): Integer;
+    function RPOP(const AListKey: string; var Value: string): boolean;
+    function LPUSH(const AListKey: string; AValues: array of string): Integer;
+    function LPUSHX(const AListKey: string; AValues: array of string): Integer;
+    function LPOP(const AListKey: string; out Value: string): boolean;
+    function LLEN(const AListKey: string): Integer;
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
       : TArray<string>;
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
@@ -113,8 +113,8 @@ type
     function GetToken(const Index: Integer): TBytes;
     procedure Clear;
     function Count: Integer;
-	 function Add(ABytes: TBytes): IRedisCommand; overload;
-	 function Add(AString: string): IRedisCommand; overload;
+    function Add(ABytes: TBytes): IRedisCommand; overload;
+    function Add(AString: string): IRedisCommand; overload;
     function SetCommand(AString: string): IRedisCommand;
     function AddRange(AStrings: array of string): IRedisCommand;
     function ToRedisCommand: TBytes;
@@ -127,8 +127,8 @@ type
     procedure Write(const Bytes: TBytes);
     procedure WriteCrLf(const Bytes: TBytes);
     procedure SendCmd(const Values: IRedisCommand);
-    function Receive(const Timeout: UInt32): string;
-    function ReceiveBytes(const ACount: Int64; const Timeout: UInt32)
+    function Receive(const Timeout: Int32): string;
+    function ReceiveBytes(const ACount: Int64; const Timeout: Int32)
       : System.TArray<System.Byte>;
     procedure Disconnect;
     function LastReadWasTimedOut: boolean;

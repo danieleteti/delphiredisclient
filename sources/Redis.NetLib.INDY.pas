@@ -15,8 +15,8 @@ type
     { ===IRedisTCPLib=== }
     procedure Connect(const HostName: string; const Port: Word); override;
     procedure Disconnect; override;
-    function Receive(const Timeout: UInt32): string; override;
-    function ReceiveBytes(const ACount: Int64; const Timeout: UInt32)
+    function Receive(const Timeout: Int32): string; override;
+    function ReceiveBytes(const ACount: Int64; const Timeout: Int32)
       : System.TArray<System.Byte>; override;
     procedure Send(const Value: string); override;
     procedure SendCmd(const Values: IRedisCommand); override;
@@ -63,15 +63,14 @@ begin
   Result := FTCPClient.IOHandler.ReadLnTimedout;
 end;
 
-function TRedisTCPLibINDY.Receive(const Timeout: UInt32): string;
+function TRedisTCPLibINDY.Receive(const Timeout: Int32): string;
 begin
-  // FTCPClient.ReadTimeout := Timeout;
   Result := FTCPClient.IOHandler.ReadLn(LF, Timeout, -1,
     IndyTextEncoding_Default);
 end;
 
 function TRedisTCPLibINDY.ReceiveBytes(const ACount: Int64;
-  const Timeout: UInt32): System.TArray<System.Byte>;
+  const Timeout: Int32): System.TArray<System.Byte>;
 begin
   FTCPClient.IOHandler.ReadBytes(TIdBytes(Result), ACount);
 end;

@@ -367,7 +367,7 @@ begin
   Pieces.Add(AKey);
   for I := Low(aFields) to High(aFields) do
   begin
-    NextCMD.Add(aFields[i]);
+    NextCMD.Add(aFields[I]);
   end;
   FTCPLibInstance.SendCmd(Pieces);
   Result := ParseArrayResponse(FValidResponse)
@@ -384,8 +384,8 @@ begin
   NextCMD.Add(AKey);
   for I := Low(aFields) to High(aFields) do
   begin
-    NextCMD.Add(aFields[i]);
-    NextCMD.Add(AValues[i]);
+    NextCMD.Add(aFields[I]);
+    NextCMD.Add(AValues[I]);
   end;
   FTCPLibInstance.SendCmd(NextCMD);
   CheckResponseType('OK',
