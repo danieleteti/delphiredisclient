@@ -68,7 +68,10 @@ begin
           DecorateTopicNameWithClientID(TopicName),
           Timeout,
           lValues);
-        Value := lValues[1];
+        if Result then
+          Value := lValues[1]
+        else
+          Value := '';
       end;
 
     ManualAck:
