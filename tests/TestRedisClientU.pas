@@ -44,6 +44,7 @@ type
     procedure TestLRANGE;
     procedure TestLLEN;
     procedure TestRPOPLPUSH;
+    procedure TestBRPOPLPUSH;
     procedure TestBLPOP;
     procedure TestBRPOP;
     procedure TestLREM;
@@ -145,6 +146,29 @@ begin
 
   CheckTrue(FRedis.BRPOP(['mylist'], 10, ArrRes));
   CheckEquals(2, Length(ArrRes));
+end;
+
+procedure TestRedisClient.TestBRPOPLPUSH;
+var
+  Value: string;
+begin
+  FRedis.DEL(['mylist', 'myotherlist']);
+  CheckFalse(FRedis.BRPOPLPUSH('mylist', 'myotherlist', Value, 1));
+  CheckEquals('', Value);
+  FRedis.RPUSH('mylist', ['one', 'two']);
+
+  CheckTrue(FRedis.BRPOPLPUSH('mylist', 'myotherlist', Value, 1));
+  CheckEquals('two', Value);
+  CheckTrue(FRedis.RPOP('myotherlist', Value));
+  CheckEquals('two', Value);
+
+  CheckTrue(FRedis.BRPOPLPUSH('mylist', 'myotherlist', Value, 1));
+  CheckEquals('one', Value);
+  CheckTrue(FRedis.RPOP('myotherlist', Value));
+  CheckEquals('one', Value);
+
+  CheckFalse(FRedis.BRPOPLPUSH('mylist', 'myotherlist', Value, 1));
+  CheckEquals('', Value);
 end;
 
 procedure TestRedisClient.TestCommandParser;
@@ -363,8 +387,19 @@ begin
   CheckFalse(FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
   CheckEquals('', Value);
   FRedis.RPUSH('mylist', ['one', 'two']);
-  CheckEquals(true, FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
+
+  CheckTrue(FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
   CheckEquals('two', Value);
+  CheckTrue(FRedis.RPOP('myotherlist', Value));
+  CheckEquals('two', Value);
+
+  CheckTrue(FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
+  CheckEquals('one', Value);
+  CheckTrue(FRedis.RPOP('myotherlist', Value));
+  CheckEquals('one', Value);
+
+  CheckFalse(FRedis.RPOPLPUSH('mylist', 'myotherlist', Value));
+  CheckEquals('', Value);
 end;
 
 procedure TestRedisClient.TestRPUSHX_LPUSHX;

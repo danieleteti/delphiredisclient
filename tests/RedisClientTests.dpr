@@ -22,7 +22,9 @@ uses
   Redis.NetLib.Factory in '..\sources\Redis.NetLib.Factory.pas',
   Redis.NetLib.INDY in '..\sources\Redis.NetLib.INDY.pas',
   Redis.Command in '..\sources\Redis.Command.pas',
-  Redis.Commons in '..\sources\Redis.Commons.pas';
+  Redis.Commons in '..\sources\Redis.Commons.pas',
+  TestRedisMQ in 'TestRedisMQ.pas',
+  RedisMQ in '..\sources\RedisMQ.pas';
 
 {$R *.RES }
 

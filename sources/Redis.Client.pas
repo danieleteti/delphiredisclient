@@ -88,7 +88,9 @@ type
       : TArray<string>;
     function LLEN(const AListKey: string): Integer;
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
-      var APoppedAndPushedElement: string): boolean;
+      var APoppedAndPushedElement: string): boolean; overload;
+    function BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
+      var APoppedAndPushedElement: string; ATimeout: Int32): boolean; overload;
     function BLPOP(const AKeys: array of string; const ATimeout: Int32;
       out Value: TArray<string>): boolean;
     function BRPOP(const AKeys: array of string; const ATimeout: Int32;
@@ -101,9 +103,13 @@ type
       ATimeoutCallback: TRedisTimeoutCallback);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // sets
-    function SADD(const AKey, AValue: TBytes): Integer;
-    function SREM(const AKey, AValue: TBytes): Integer;
+    function SADD(const AKey, AValue: TBytes): Integer; overload;
+    function SADD(const AKey, AValue: String): Integer; overload;
+    function SREM(const AKey, AValue: TBytes): Integer; overload;
+    function SREM(const AKey, AValue: String): Integer; overload;
     function SMEMBERS(const AKey: string): TArray<string>;
+    // lua scripts
+    function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
@@ -131,6 +137,11 @@ begin
   NextCMD := GetCmdList('SADD').Add(AKey).Add(AValue);
   FTCPLibInstance.SendCmd(NextCMD);
   Result := ParseIntegerResponse;
+end;
+
+function TRedisClient.SADD(const AKey, AValue: String): Integer;
+begin
+  Result := SADD(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
 end;
 
 procedure TRedisClient.SELECT(const ADBIndex: Integer);
@@ -284,6 +295,32 @@ begin
     0 if key does not exist or the timeout could not be set.
   }
   Result := ParseIntegerResponse = 1;
+end;
+
+function TRedisClient.EVAL(const AScript: String; AKeys,
+  AValues: array of string): Integer;
+var
+  lCmd: IRedisCommand;
+  lParamsCount: Integer;
+  lPar: String;
+begin
+  lCmd := NewRedisCommand('EVAL');
+  lParamsCount := Length(AKeys);
+  lCmd.Add(AScript).Add(IntToStr(lParamsCount));
+
+  if lParamsCount > 0 then
+  begin
+    for lPar in AKeys do
+    begin
+      lCmd.Add(lPar);
+    end;
+    for lPar in AValues do
+    begin
+      lCmd.Add(lPar);
+    end;
+  end;
+
+  Result := ExecuteWithIntegerResult(lCmd);
 end;
 
 function TRedisClient.ExecuteAndGetArray(const RedisCommand: IRedisCommand)
@@ -603,7 +640,16 @@ begin
   AValidResponse := True;
   NextToken(R);
   if FIsTimeout then
+  begin
+    AValidResponse := False;
     Exit;
+  end;
+
+  if R = TRedisConsts.NULL_ARRAY then
+  begin
+    AValidResponse := True;
+    Exit(TRedisConsts.NULL_ARRAY);
+  end;
 
   case R.Chars[0] of
     '+':
@@ -693,6 +739,26 @@ begin
   Value := ParseSimpleStringResponse(Result);
 end;
 
+function TRedisClient.BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
+  var APoppedAndPushedElement: string; ATimeout: Int32): boolean;
+var
+  lValue: string;
+begin
+  APoppedAndPushedElement := '';
+  NextCMD := GetCmdList('BRPOPLPUSH');
+  NextCMD.Add(ARightListKey);
+  NextCMD.Add(ALeftListKey);
+  NextCMD.Add(ATimeout.ToString);
+  FTCPLibInstance.SendCmd(NextCMD);
+  lValue := ParseSimpleStringResponse(FValidResponse);
+  Result := not (lValue = TRedisConsts.NULL_ARRAY);
+  if Result then
+  begin
+    APoppedAndPushedElement := lValue;
+    // Result := FValidResponse;
+  end;
+end;
+
 function TRedisClient.RPOPLPUSH(const ARightListKey, ALeftListKey: string;
   var APoppedAndPushedElement: string): boolean;
 begin
@@ -753,6 +819,11 @@ begin
   NextCMD := GetCmdList('SMEMBERS').Add(AKey);
   FTCPLibInstance.SendCmd(NextCMD);
   Result := ParseArrayResponse(FValidResponse);
+end;
+
+function TRedisClient.SREM(const AKey, AValue: String): Integer;
+begin
+  Result := SREM(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
 end;
 
 function TRedisClient.SREM(const AKey, AValue: TBytes): Integer;

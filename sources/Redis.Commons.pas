@@ -17,6 +17,7 @@ type
   const
     TTL_KEY_DOES_NOT_EXIST = -2;
     TTL_KEY_IS_NOT_VOLATILE = -1;
+    NULL_ARRAY = '*-1';
   end;
 
   TRedisClientBase = class abstract(TInterfacedObject)
@@ -69,7 +70,9 @@ type
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
       : TArray<string>;
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
-      var APoppedAndPushedElement: string): boolean;
+      var APoppedAndPushedElement: string): boolean; overload;
+    function BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
+      var APoppedAndPushedElement: string; ATimeout: Int32): boolean; overload;
     function BLPOP(const AKeys: array of string; const ATimeout: Int32;
       out Value: TArray<string>): boolean;
     function BRPOP(const AKeys: array of string; const ATimeout: Int32;
@@ -77,9 +80,15 @@ type
     function LREM(const AListKey: string; const ACount: Integer;
       const AValue: string): Integer;
     // sets
-    function SADD(const AKey, AValue: TBytes): Integer;
-    function SREM(const AKey, AValue: TBytes): Integer;
+    function SADD(const AKey, AValue: TBytes): Integer; overload;
+    function SADD(const AKey, AValue: String): Integer; overload;
+    function SREM(const AKey, AValue: TBytes): Integer; overload;
+    function SREM(const AKey, AValue: String): Integer; overload;
     function SMEMBERS(const AKey: string): TArray<string>;
+
+    // lua scripts
+    function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
+
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
