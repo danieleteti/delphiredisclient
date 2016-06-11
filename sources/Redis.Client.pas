@@ -77,6 +77,7 @@ type
       : boolean; overload;
     function HGET(const AKey, aField: String; out AValue: string)
       : boolean; overload;
+    function HDEL(const AKey: String; aFields: TArray<String>): Integer;
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
     function RPUSHX(const AListKey: string; AValues: array of string): Integer;
@@ -108,6 +109,7 @@ type
     function SREM(const AKey, AValue: TBytes): Integer; overload;
     function SREM(const AKey, AValue: String): Integer; overload;
     function SMEMBERS(const AKey: string): TArray<string>;
+    function SCARD(const AKey: string): Integer;
     // lua scripts
     function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
     // system
@@ -142,6 +144,12 @@ end;
 function TRedisClient.SADD(const AKey, AValue: String): Integer;
 begin
   Result := SADD(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
+end;
+
+function TRedisClient.SCARD(const AKey: string): Integer;
+begin
+  NextCMD := GetCmdList('SCARD').Add(AKey);
+  Result := ExecuteWithIntegerResult(NextCMD);
 end;
 
 procedure TRedisClient.SELECT(const ADBIndex: Integer);
@@ -383,6 +391,18 @@ begin
   FTCPLibInstance.SendCmd(Pieces);
   AValue := ParseSimpleStringResponseAsByte(FValidResponse);
   Result := FValidResponse;
+end;
+
+function TRedisClient.HDEL(const AKey: String;
+  aFields: TArray<String>): Integer;
+var
+  lCommand: IRedisCommand;
+begin
+  lCommand := GetCmdList('HDEL');
+  lCommand.Add(AKey);
+  lCommand.AddRange(aFields);
+  FTCPLibInstance.SendCmd(lCommand);
+  Result := ParseIntegerResponse;
 end;
 
 function TRedisClient.HGET(const AKey, aField: String;
@@ -751,7 +771,7 @@ begin
   NextCMD.Add(ATimeout.ToString);
   FTCPLibInstance.SendCmd(NextCMD);
   lValue := ParseSimpleStringResponse(FValidResponse);
-  Result := not (lValue = TRedisConsts.NULL_ARRAY);
+  Result := not(lValue = TRedisConsts.NULL_ARRAY);
   if Result then
   begin
     APoppedAndPushedElement := lValue;

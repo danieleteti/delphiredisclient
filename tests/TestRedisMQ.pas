@@ -52,16 +52,16 @@ end;
 
 procedure TestTRedisMQ.TestAutoAckMode;
 var
-  lValue: string;
+  lValue, lMessageID: string;
 begin
   FRedisMQ1.SubscribeTopic('topic1');
 
   FRedisMQ2.PublishToTopic('topic1', 'msg1');
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue));
-  CheckFalse(FRedisMQ1.Ack('topic1', lValue));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID));
+  CheckFalse(FRedisMQ1.Ack('topic1', lMessageID));
 
   FRedisMQ2.PublishToTopic('topic1', 'msg1');
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, 1, TRMQAckMode.AutoAck));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID, 1, TRMQAckMode.AutoAck));
   CheckFalse(FRedisMQ1.Ack('topic1', lValue));
 end;
 
@@ -84,22 +84,23 @@ end;
 procedure TestTRedisMQ.TestEmptyTopicQueue;
 var
   lValue: string;
+  lMessageID: string;
 begin
   FRedisMQ1.SubscribeTopic('topic1');
 
   FRedisMQ1.PublishToTopic('topic1', 'msg1');
 
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID));
   CheckEquals('msg1', lValue);
-  CheckFalse(FRedisMQ1.ConsumeTopic('topic1', lValue));
+  CheckFalse(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID));
   CheckEquals('', lValue);
 end;
 
 procedure TestTRedisMQ.TestInvalidTopicQueue;
 var
-  lValue: string;
+  lValue, lMessageID: string;
 begin
-  CheckFalse(FRedisMQ1.ConsumeTopic('notvalid', lValue));
+  CheckFalse(FRedisMQ1.ConsumeTopic('notvalid', lValue, lMessageID));
   CheckEquals('', lValue);
 end;
 
@@ -107,6 +108,7 @@ procedure TestTRedisMQ.TestLotOfMessages;
 var
   lValue: string;
   I: Integer;
+  lMessageID: string;
 begin
   FRedisMQ1.SubscribeTopic('topic1');
 
@@ -117,29 +119,32 @@ begin
 
   for I := 1 to 200 do
   begin
-    CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, TRMQAckMode.ManualAck));
-    CheckTrue(FRedisMQ1.Ack('topic1', lValue));
+    CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID, TRMQAckMode.ManualAck));
+    CheckTrue(FRedisMQ1.Ack('topic1', lMessageID));
     CheckEquals('msg' + I.ToString, lValue);
   end;
-  CheckFalse(FRedisMQ1.ConsumeTopic('topic1', lValue));
+  CheckFalse(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID));
   CheckEquals('', lValue);
 end;
 
 procedure TestTRedisMQ.TestManualAckMode;
 var
   lValue: string;
+  lMessageID: string;
 begin
   FRedisMQ1.SubscribeTopic('topic1');
 
   FRedisMQ2.PublishToTopic('topic1', 'msg1');
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, TRMQAckMode.ManualAck));
-  CheckTrue(FRedisMQ1.Ack('topic1', lValue));
-  CheckFalse(FRedisMQ1.Ack('topic1', lValue));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID, TRMQAckMode.ManualAck));
+  CheckNotEquals('', lMessageID);
+  CheckTrue(FRedisMQ1.Ack('topic1', lMessageID));
+  CheckFalse(FRedisMQ1.Ack('topic1', lMessageID));
 
   FRedisMQ2.PublishToTopic('topic1', 'msg1');
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, 1, TRMQAckMode.ManualAck));
-  CheckTrue(FRedisMQ1.Ack('topic1', lValue));
-  CheckFalse(FRedisMQ1.Ack('topic1', lValue));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID, 1, TRMQAckMode.ManualAck));
+  CheckNotEquals('', lMessageID);
+  CheckTrue(FRedisMQ1.Ack('topic1', lMessageID));
+  CheckFalse(FRedisMQ1.Ack('topic1', lMessageID));
 
 end;
 
@@ -173,32 +178,33 @@ end;
 procedure TestTRedisMQ.TestSubscribe;
 var
   lValue: string;
+  lMessageID: string;
 begin
   FRedisMQ1.SubscribeTopic('topic1');
   FRedisMQ2.SubscribeTopic('topic1');
 
   // empty queues
-  while FRedisMQ1.ConsumeTopic('topic1', lValue) do
+  while FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID) do
   begin
-    FRedisMQ1.Ack('topic1', lValue);
+    FRedisMQ1.Ack('topic1', lMessageID);
   end;
-  while FRedisMQ2.ConsumeTopic('topic1', lValue) do
+  while FRedisMQ2.ConsumeTopic('topic1', lValue, lMessageID) do
   begin
-    FRedisMQ2.Ack('topic1', lValue);
+    FRedisMQ2.Ack('topic1', lMessageID);
   end;
   // end - empty queues
 
   FRedisMQ1.PublishToTopic('topic1', 'msg1');
   FRedisMQ2.PublishToTopic('topic1', 'msg2');
 
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID));
   CheckEquals('msg1', lValue);
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1', lValue, lMessageID));
   CheckEquals('msg2', lValue);
 
-  CheckTrue(FRedisMQ2.ConsumeTopic('topic1', lValue));
+  CheckTrue(FRedisMQ2.ConsumeTopic('topic1', lValue, lMessageID));
   CheckEquals('msg1', lValue);
-  CheckTrue(FRedisMQ2.ConsumeTopic('topic1', lValue));
+  CheckTrue(FRedisMQ2.ConsumeTopic('topic1', lValue, lMessageID));
   CheckEquals('msg2', lValue);
 
 end;
@@ -206,14 +212,15 @@ end;
 procedure TestTRedisMQ.TestUnsubscribe;
 var
   lValue: string;
+  lMessageID: string;
 begin
   FRedisMQ1.SubscribeTopic('topic1000');
   FRedisMQ1.PublishToTopic('topic1000', 'hello world');
-  CheckTrue(FRedisMQ1.ConsumeTopic('topic1000', lValue));
+  CheckTrue(FRedisMQ1.ConsumeTopic('topic1000', lValue, lMessageID));
   CheckEquals('hello world', lValue);
   FRedisMQ1.UnsubscribeTopic('topic1000');
   FRedisMQ1.PublishToTopic('topic1000', 'hello world');
-  CheckFalse(FRedisMQ1.ConsumeTopic('topic1000', lValue));
+  CheckFalse(FRedisMQ1.ConsumeTopic('topic1000', lValue, lMessageID));
   CheckEquals('', lValue);
 end;
 

@@ -58,6 +58,7 @@ type
     function HSET(const AKey, aField: String; AValue: TBytes): Integer; overload;
     function HGET(const AKey, aField: String; out AValue: TBytes): boolean; overload;
     function HGET(const AKey, aField: String; out AValue: string): boolean; overload;
+    function HDEL(const AKey: String; aFields: TArray<String>): Integer;
 
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
@@ -85,6 +86,7 @@ type
     function SREM(const AKey, AValue: TBytes): Integer; overload;
     function SREM(const AKey, AValue: String): Integer; overload;
     function SMEMBERS(const AKey: string): TArray<string>;
+    function SCARD(const AKey: string): Integer;
 
     // lua scripts
     function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
