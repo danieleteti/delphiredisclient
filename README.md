@@ -72,17 +72,12 @@ This is the  interface used to send command to the Redis server. Each method is 
     procedure SELECT(const ADBIndex: Integer);
 
     // raw execute
-    function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
-      : TArray<string>;
-    function ExecuteWithIntegerResult(const RedisCommand: string)
-      : TArray<string>; overload;
-    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
-      : Int64; overload;
+    function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TArray<string>;
+    function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>; overload;
+    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand): Int64; overload;
     function ExecuteWithStringResult(const RedisCommand: IRedisCommand): string;
     // pubsub
-    procedure SUBSCRIBE(const AChannels: array of string;
-      ACallback: TProc<string, string>;
-      ATimeoutCallback: TRedisTimeoutCallback);
+    procedure SUBSCRIBE(const AChannels: array of string; ACallback: TProc<string, string>; ATimeoutCallback: TRedisTimeoutCallback);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // transactions
     function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<String>;
@@ -95,17 +90,6 @@ This is the  interface used to send command to the Redis server. Each method is 
     procedure SetCommandTimeout(const Timeout: Int32);
   end;
 
-  IRedisCommand = interface
-    ['{79C43B91-604F-49BC-8EB8-35F092258833}']
-    function GetToken(const Index: Integer): TBytes;
-    procedure Clear;
-    function Count: Integer;
-    function Add(ABytes: TBytes): IRedisCommand; overload;
-    function Add(AString: string): IRedisCommand; overload;
-    function SetCommand(AString: string): IRedisCommand;
-    function AddRange(AStrings: array of string): IRedisCommand;
-    function ToRedisCommand: TBytes;
-  end;
   ```
 
 Delphi Redis Client is not tied to a specific TCP/IP library. Currently it uses INDY but you can implement the IRedisNetLibAdapter and wrap whatever library you like.
@@ -116,9 +100,13 @@ Delphi Redis Client is not tied to a specific TCP/IP library. Currently it uses 
     ['{2DB21166-2E68-4DC4-9870-5DCCAAE877A3}']
     procedure Connect(const HostName: string; const Port: Word);
     procedure Send(const Value: string);
-    procedure SendCmd(const Values: TRedisCmdParts);
-    function Receive(const Timeout): string;
+    procedure Write(const Bytes: TBytes);
+    procedure WriteCrLf(const Bytes: TBytes);
+    procedure SendCmd(const Values: IRedisCommand);
+    function Receive(const Timeout: Int32): string;
+    function ReceiveBytes(const ACount: Int64; const Timeout: Int32): System.TArray<System.Byte>;
     procedure Disconnect;
+    function LastReadWasTimedOut: boolean;
   end;
 ```
 
