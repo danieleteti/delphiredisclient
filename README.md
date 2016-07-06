@@ -13,14 +13,30 @@ This is the  interface used to send command to the Redis server. Each method is 
 ```Delphi
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
-    
-    //single values
-    function &SET(const AKey, AValue: string): boolean;
-    function GET(const AKey: string; out AValue: string): boolean;
+    function &SET(const AKey, AValue: string): boolean; overload;
+    function &SET(const AKey, AValue: TBytes): boolean; overload;
+    function &SET(const AKey: String; AValue: TBytes): boolean; overload;
+    function SETNX(const AKey, AValue: string): boolean; overload;
+    function SETNX(const AKey, AValue: TBytes): boolean; overload;
+    function GET(const AKey: string; out AValue: string): boolean; overload;
+    function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
+    function GET(const AKey: String; out AValue: TBytes): boolean; overload;
     function DEL(const AKeys: array of string): Integer;
+    function TTL(const AKey: string): Integer;
+    function EXISTS(const AKey: string): boolean;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
-   
+    function INCR(const AKey: string): NativeInt;
+    function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
+
+    // hash
+    function HSET(const AKey, aField: String; AValue: string): Integer; overload;
+    procedure HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
+    function HMGET(const AKey: String; aFields: TArray<String>): TArray<String>;
+    function HSET(const AKey, aField: String; AValue: TBytes): Integer; overload;
+    function HGET(const AKey, aField: String; out AValue: TBytes): boolean; overload;
+    function HGET(const AKey, aField: String; out AValue: string): boolean; overload;
+
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
     function RPUSHX(const AListKey: string; AValues: array of string): Integer;
@@ -29,24 +45,68 @@ This is the  interface used to send command to the Redis server. Each method is 
     function LPUSHX(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
     function LLEN(const AListKey: string): Integer;
-    function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer): TArray<string>;
-    function RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
-    function BLPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
-    function BRPOP(const AKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
-    function LREM(const AListKey: string; const ACount: Integer; const AValue: string): Integer;
+    function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
+      : TArray<string>;
+    function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
+      var APoppedAndPushedElement: string): boolean; overload;
+    function BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
+      var APoppedAndPushedElement: string; ATimeout: Int32): boolean; overload;
+    function BLPOP(const AKeys: array of string; const ATimeout: Int32;
+      out Value: TArray<string>): boolean;
+    function BRPOP(const AKeys: array of string; const ATimeout: Int32;
+      out Value: TArray<string>): boolean;
+    function LREM(const AListKey: string; const ACount: Integer;
+      const AValue: string): Integer;
+    // sets
+    function SADD(const AKey, AValue: TBytes): Integer; overload;
+    function SADD(const AKey, AValue: String): Integer; overload;
+    function SREM(const AKey, AValue: TBytes): Integer; overload;
+    function SREM(const AKey, AValue: String): Integer; overload;
+    function SMEMBERS(const AKey: string): TArray<string>;
+
+    // lua scripts
+    function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
 
     // system
-    function FLUSHDB: boolean;
+    procedure FLUSHDB;
+    procedure SELECT(const ADBIndex: Integer);
 
     // raw execute
-    function ExecuteWithStringArrayResult(const RedisCommand: string): TArray<string>;
-    function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>;
-    
+    function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
+      : TArray<string>;
+    function ExecuteWithIntegerResult(const RedisCommand: string)
+      : TArray<string>; overload;
+    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
+      : Int64; overload;
+    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): string;
+    // pubsub
+    procedure SUBSCRIBE(const AChannels: array of string;
+      ACallback: TProc<string, string>;
+      ATimeoutCallback: TRedisTimeoutCallback);
+    function PUBLISH(const AChannel: string; AMessage: string): Integer;
+    // transactions
+    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<String>;
+    procedure DISCARD;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
+    // client
+    procedure ClientSetName(const ClientName: String);
+    procedure SetCommandTimeout(const Timeout: Int32);
   end;
-```
+
+  IRedisCommand = interface
+    ['{79C43B91-604F-49BC-8EB8-35F092258833}']
+    function GetToken(const Index: Integer): TBytes;
+    procedure Clear;
+    function Count: Integer;
+    function Add(ABytes: TBytes): IRedisCommand; overload;
+    function Add(AString: string): IRedisCommand; overload;
+    function SetCommand(AString: string): IRedisCommand;
+    function AddRange(AStrings: array of string): IRedisCommand;
+    function ToRedisCommand: TBytes;
+  end;
+  ```
 
 Delphi Redis Client is not tied to a specific TCP/IP library. Currently it uses INDY but you can implement the IRedisNetLibAdapter and wrap whatever library you like.
 
