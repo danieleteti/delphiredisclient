@@ -185,9 +185,7 @@ end;
 
 function TRedisMQ.GenerateMessageID(const aTopicName, aMessage: String): String;
 begin
-//  Result := TGuid.NewGuid.ToString;
-  Result := IdGlobal.IndyLowerCase(FHashMessageDigest5.HashStringAsHex(aTopicName + '.' +
-    aMessage));
+  Result := IntToStr(FRedisClient.INCR(PREFIX + aTopicName + '::uuid'));
 end;
 
 procedure TRedisMQ.PublishToTopic(const TopicName, Value: String);

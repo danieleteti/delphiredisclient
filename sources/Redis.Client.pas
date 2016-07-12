@@ -36,7 +36,7 @@ type
   protected
     procedure Connect;
     function GetCmdList(const Cmd: string): IRedisCommand;
-    procedure NextToken(out Msg: String);
+    procedure NextToken(out Msg: string);
     function NextBytes(const ACount: UInt32): TBytes;
     /// //
     function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
@@ -52,12 +52,12 @@ type
     /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
-    function &SET(const AKey: String; AValue: TBytes): boolean; overload;
+    function &SET(const AKey: string; AValue: TBytes): boolean; overload;
     function SETNX(const AKey, AValue: string): boolean; overload;
     function SETNX(const AKey, AValue: TBytes): boolean; overload;
     function GET(const AKey: string; out AValue: string): boolean; overload;
     function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
-    function GET(const AKey: String; out AValue: TBytes): boolean; overload;
+    function GET(const AKey: string; out AValue: TBytes): boolean; overload;
     function TTL(const AKey: string): Integer;
     function DEL(const AKeys: array of string): Integer;
     function EXISTS(const AKey: string): boolean;
@@ -67,17 +67,17 @@ type
     function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
 
     // hash
-    function HSET(const AKey, aField: String; AValue: string): Integer;
+    function HSET(const AKey, aField: string; AValue: string): Integer;
       overload;
-    function HSET(const AKey, aField: String; AValue: TBytes): Integer;
+    function HSET(const AKey, aField: string; AValue: TBytes): Integer;
       overload;
-    procedure HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
-    function HMGET(const AKey: String; aFields: TArray<String>): TArray<String>;
-    function HGET(const AKey, aField: String; out AValue: TBytes)
+    procedure HMSET(const AKey: string; aFields: TArray<string>; AValues: TArray<string>);
+    function HMGET(const AKey: string; aFields: TArray<string>): TArray<string>;
+    function HGET(const AKey, aField: string; out AValue: TBytes)
       : boolean; overload;
-    function HGET(const AKey, aField: String; out AValue: string)
+    function HGET(const AKey, aField: string; out AValue: string)
       : boolean; overload;
-    function HDEL(const AKey: String; aFields: TArray<String>): Integer;
+    function HDEL(const AKey: string; aFields: TArray<string>): Integer;
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
     function RPUSHX(const AListKey: string; AValues: array of string): Integer;
@@ -105,13 +105,13 @@ type
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // sets
     function SADD(const AKey, AValue: TBytes): Integer; overload;
-    function SADD(const AKey, AValue: String): Integer; overload;
+    function SADD(const AKey, AValue: string): Integer; overload;
     function SREM(const AKey, AValue: TBytes): Integer; overload;
-    function SREM(const AKey, AValue: String): Integer; overload;
+    function SREM(const AKey, AValue: string): Integer; overload;
     function SMEMBERS(const AKey: string): TArray<string>;
     function SCARD(const AKey: string): Integer;
     // lua scripts
-    function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
+    function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
@@ -129,7 +129,7 @@ type
     procedure Disconnect;
     procedure SetCommandTimeout(const Timeout: Int32);
     // client
-    procedure ClientSetName(const ClientName: String);
+    procedure ClientSetName(const ClientName: string);
   end;
 
   { TRedisClient }
@@ -141,7 +141,7 @@ begin
   Result := ParseIntegerResponse;
 end;
 
-function TRedisClient.SADD(const AKey, AValue: String): Integer;
+function TRedisClient.SADD(const AKey, AValue: string): Integer;
 begin
   Result := SADD(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
 end;
@@ -168,7 +168,7 @@ begin
   Result := True;
 end;
 
-function TRedisClient.&SET(const AKey: String; AValue: TBytes): boolean;
+function TRedisClient.&SET(const AKey: string; AValue: TBytes): boolean;
 begin
   Result := &SET(BytesOf(AKey), AValue);
 end;
@@ -199,7 +199,7 @@ begin
   end;
 end;
 
-procedure TRedisClient.ClientSetName(const ClientName: String);
+procedure TRedisClient.ClientSetName(const ClientName: string);
 begin
   NextCMD := GetCmdList('CLIENT');
   NextCMD.Add('SETNAME');
@@ -305,12 +305,12 @@ begin
   Result := ParseIntegerResponse = 1;
 end;
 
-function TRedisClient.EVAL(const AScript: String; AKeys,
+function TRedisClient.EVAL(const AScript: string; AKeys,
   AValues: array of string): Integer;
 var
   lCmd: IRedisCommand;
   lParamsCount: Integer;
-  lPar: String;
+  lPar: string;
 begin
   lCmd := NewRedisCommand('EVAL');
   lParamsCount := Length(AKeys);
@@ -375,12 +375,12 @@ begin
   Result.SetCommand(Cmd);
 end;
 
-function TRedisClient.HSET(const AKey, aField: String; AValue: string): Integer;
+function TRedisClient.HSET(const AKey, aField: string; AValue: string): Integer;
 begin
   Result := HSET(AKey, aField, BytesOfUnicode(AValue));
 end;
 
-function TRedisClient.HGET(const AKey, aField: String;
+function TRedisClient.HGET(const AKey, aField: string;
   out AValue: TBytes): boolean;
 var
   Pieces: IRedisCommand;
@@ -393,8 +393,8 @@ begin
   Result := FValidResponse;
 end;
 
-function TRedisClient.HDEL(const AKey: String;
-  aFields: TArray<String>): Integer;
+function TRedisClient.HDEL(const AKey: string;
+  aFields: TArray<string>): Integer;
 var
   lCommand: IRedisCommand;
 begin
@@ -405,7 +405,7 @@ begin
   Result := ParseIntegerResponse;
 end;
 
-function TRedisClient.HGET(const AKey, aField: String;
+function TRedisClient.HGET(const AKey, aField: string;
   out AValue: string): boolean;
 var
   Resp: TBytes;
@@ -414,15 +414,15 @@ begin
   AValue := StringOfUnicode(Resp);
 end;
 
-function TRedisClient.HMGET(const AKey: String;
-  aFields: TArray<String>): TArray<String>;
+function TRedisClient.HMGET(const AKey: string;
+  aFields: TArray<string>): TArray<string>;
 var
   Pieces: IRedisCommand;
   I: Integer;
 begin
   Pieces := GetCmdList('HMGET');
   Pieces.Add(AKey);
-  for I := Low(aFields) to High(aFields) do
+  for I := low(aFields) to high(aFields) do
   begin
     NextCMD.Add(aFields[I]);
   end;
@@ -430,7 +430,7 @@ begin
   Result := ParseArrayResponse(FValidResponse)
 end;
 
-procedure TRedisClient.HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
+procedure TRedisClient.HMSET(const AKey: string; aFields: TArray<string>; AValues: TArray<string>);
 var
   I: Integer;
 begin
@@ -439,7 +439,7 @@ begin
 
   NextCMD := GetCmdList('HMSET');
   NextCMD.Add(AKey);
-  for I := Low(aFields) to High(aFields) do
+  for I := low(aFields) to high(aFields) do
   begin
     NextCMD.Add(aFields[I]);
     NextCMD.Add(AValues[I]);
@@ -449,7 +449,7 @@ begin
     StringOf(ParseSimpleStringResponseAsByte(FValidResponse)));
 end;
 
-function TRedisClient.HSET(const AKey, aField: String; AValue: TBytes): Integer;
+function TRedisClient.HSET(const AKey, aField: string; AValue: TBytes): Integer;
 begin
   NextCMD := GetCmdList('HSET');
   NextCMD.Add(AKey);
@@ -571,7 +571,7 @@ begin
   end;
 end;
 
-procedure TRedisClient.NextToken(out Msg: String);
+procedure TRedisClient.NextToken(out Msg: string);
 begin
   Msg := FTCPLibInstance.Receive(FCommandTimeout);
   FIsTimeout := FTCPLibInstance.LastReadWasTimedOut;
@@ -679,7 +679,7 @@ begin
     '$':
       begin
         HowMany := R.Substring(1).ToInteger;
-        if HowMany > 0 then
+        if HowMany >= 0 then
         begin
           NextToken(R);
           if FIsTimeout then
@@ -723,7 +723,7 @@ begin
     '$':
       begin
         HowMany := R.Substring(1).ToInteger;
-        if HowMany > 0 then
+        if HowMany >= 0 then
         begin
           Result := FTCPLibInstance.ReceiveBytes(HowMany, FCommandTimeout);
           // eat crlf
@@ -841,7 +841,7 @@ begin
   Result := ParseArrayResponse(FValidResponse);
 end;
 
-function TRedisClient.SREM(const AKey, AValue: String): Integer;
+function TRedisClient.SREM(const AKey, AValue: string): Integer;
 begin
   Result := SREM(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
 end;
@@ -1010,7 +1010,7 @@ begin
   TRedisCommand(Result).SetCommand(RedisCommandString);
 end;
 
-function TRedisClient.GET(const AKey: String; out AValue: TBytes): boolean;
+function TRedisClient.GET(const AKey: string; out AValue: TBytes): boolean;
 begin
   Result := GET(BytesOf(AKey), AValue);
 end;

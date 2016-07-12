@@ -52,6 +52,7 @@ type
     procedure TestMULTI;
     procedure TestHSetHGet;
     procedure TestHMSetHMGet;
+    procedure TestHMGetBUGWithEmptyValues;
     procedure TestAUTH;
     procedure TestHSetHGetUnicode;
     // procedure TestSUBSCRIBE;
@@ -237,11 +238,25 @@ begin
   CheckFalse(FRedis.GET('daniele', v));
 end;
 
+procedure TestRedisClient.TestHMGetBUGWithEmptyValues;
+var
+  Values: TArray<string>;
+begin
+  FRedis.HSET('abc', 'Name', 'Daniele Teti');
+  FRedis.HSET('abc', 'Address', '');
+  FRedis.HSET('abc', 'Postcode', '12345');
+  // there was an access violation here
+  Values := FRedis.HMGET('abc', ['Name', 'Address', 'Postcode']);
+  CheckEquals('Daniele Teti', Values[0]);
+  CheckEquals('', Values[1]);
+  CheckEquals('12345', Values[2]);
+end;
+
 procedure TestRedisClient.TestHMSetHMGet;
 const
   C_KEY = 'thekey';
 var
-  lValues: TArray<String>;
+  lValues: TArray<string>;
 begin
   FRedis.DEL([C_KEY]);
   FRedis.HMSET(C_KEY, ['field1', 'field2', 'field3'],
@@ -366,7 +381,7 @@ end;
 
 procedure TestRedisClient.TestMULTI;
 var
-  v: String;
+  v: string;
 begin
   ArrRes := FRedis.MULTI(
     procedure(Redis: IRedisClient)
