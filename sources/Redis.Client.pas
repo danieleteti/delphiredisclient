@@ -424,7 +424,7 @@ begin
   Pieces.Add(AKey);
   for I := low(aFields) to high(aFields) do
   begin
-    NextCMD.Add(aFields[I]);
+    Pieces.Add(aFields[I]);
   end;
   FTCPLibInstance.SendCmd(Pieces);
   Result := ParseArrayResponse(FValidResponse)
