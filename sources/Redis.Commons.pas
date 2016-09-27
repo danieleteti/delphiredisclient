@@ -37,12 +37,13 @@ type
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
-    function &SET(const AKey: String; AValue: TBytes): boolean; overload;
+    function &SET(const AKey: string; AValue: TBytes): boolean; overload;
+    function SETExpireInSec(const AKey: string; AValue: TBytes; ASecsExpire: UInt64): boolean;
     function SETNX(const AKey, AValue: string): boolean; overload;
     function SETNX(const AKey, AValue: TBytes): boolean; overload;
     function GET(const AKey: string; out AValue: string): boolean; overload;
     function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
-    function GET(const AKey: String; out AValue: TBytes): boolean; overload;
+    function GET(const AKey: string; out AValue: TBytes): boolean; overload;
     function DEL(const AKeys: array of string): Integer;
     function TTL(const AKey: string): Integer;
     function EXISTS(const AKey: string): boolean;
@@ -52,13 +53,13 @@ type
     function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
 
     // hash
-    function HSET(const AKey, aField: String; AValue: string): Integer; overload;
-    procedure HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
-    function HMGET(const AKey: String; aFields: TArray<String>): TArray<String>;
-    function HSET(const AKey, aField: String; AValue: TBytes): Integer; overload;
-    function HGET(const AKey, aField: String; out AValue: TBytes): boolean; overload;
-    function HGET(const AKey, aField: String; out AValue: string): boolean; overload;
-    function HDEL(const AKey: String; aFields: TArray<String>): Integer;
+    function HSET(const AKey, aField: string; AValue: string): Integer; overload;
+    procedure HMSET(const AKey: string; aFields: TArray<string>; AValues: TArray<string>);
+    function HMGET(const AKey: string; aFields: TArray<string>): TArray<string>;
+    function HSET(const AKey, aField: string; AValue: TBytes): Integer; overload;
+    function HGET(const AKey, aField: string; out AValue: TBytes): boolean; overload;
+    function HGET(const AKey, aField: string; out AValue: string): boolean; overload;
+    function HDEL(const AKey: string; aFields: TArray<string>): Integer;
 
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
@@ -82,14 +83,27 @@ type
       const AValue: string): Integer;
     // sets
     function SADD(const AKey, AValue: TBytes): Integer; overload;
-    function SADD(const AKey, AValue: String): Integer; overload;
+    function SADD(const AKey, AValue: string): Integer; overload;
     function SREM(const AKey, AValue: TBytes): Integer; overload;
-    function SREM(const AKey, AValue: String): Integer; overload;
+    function SREM(const AKey, AValue: string): Integer; overload;
     function SMEMBERS(const AKey: string): TArray<string>;
     function SCARD(const AKey: string): Integer;
 
+    //ordered sets
+    function ZADD(const AKey: String; const AScore: Int64; const AMember: String): Integer;
+    function ZREM(const AKey: String; const AMember: String): Integer;
+    function ZCARD(const AKey: String): Integer;
+    function ZCOUNT(const AKey: String; const AMin, AMax: Int64): Integer;
+    function ZRANK(const AKey: String; const AMember: String; out ARank: Int64): Boolean;
+    function ZRANGE(const AKey: String; const AStart, AStop: Int64): TArray<string>;
+    function ZRANGEWithScore(const AKey: String; const AStart, AStop: Int64): TArray<string>;
+
+    // geo
+//    function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)
+//      : Integer;
+
     // lua scripts
-    function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
+    function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
 
     // system
     procedure FLUSHDB;
@@ -109,13 +123,13 @@ type
       ATimeoutCallback: TRedisTimeoutCallback);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // transactions
-    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<String>;
+    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>;
     procedure DISCARD;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
     // client
-    procedure ClientSetName(const ClientName: String);
+    procedure ClientSetName(const ClientName: string);
     procedure SetCommandTimeout(const Timeout: Int32);
   end;
 
