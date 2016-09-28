@@ -69,6 +69,7 @@ type
     function LPUSHX(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
     function LLEN(const AListKey: string): Integer;
+    procedure LTRIM(const AListKey: string; const AIndexStart, AIndexStop: Integer);
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
       : TArray<string>;
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
@@ -97,6 +98,7 @@ type
     function ZRANK(const AKey: String; const AMember: String; out ARank: Int64): Boolean;
     function ZRANGE(const AKey: String; const AStart, AStop: Int64): TArray<string>;
     function ZRANGEWithScore(const AKey: String; const AStart, AStop: Int64): TArray<string>;
+    function ZINCRBY(const AKey: String; const AIncrement: Int64; const AMember: String): string;
 
     // geo
 //    function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)

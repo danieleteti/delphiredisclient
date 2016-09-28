@@ -43,6 +43,8 @@ type
     procedure TestLPUSH_LPOP;
     procedure TestLRANGE;
     procedure TestLLEN;
+    procedure TestLTRIM;
+    procedure TestZADD_ZRANK_ZCARD;
     procedure TestRPOPLPUSH;
     procedure TestBRPOPLPUSH;
     procedure TestBLPOP;
@@ -371,6 +373,24 @@ begin
   CheckEquals('foo', ArrRes[1]);
 end;
 
+procedure TestRedisClient.TestLTRIM;
+begin
+  FRedis.DEL(['mylist']);
+  CheckEquals(0, FRedis.LLEN('mylist'));
+
+  FRedis.RPUSH('mylist', ['one', 'two', 'three', 'four', 'five']);
+  CheckEquals(5, FRedis.LLEN('mylist'));
+
+  FRedis.LTRIM('mylist', 0, 2);
+  CheckEquals(3, FRedis.LLEN('mylist'));
+
+  FRedis.LTRIM('mylist', 1, -2);
+  CheckEquals(1, FRedis.LLEN('mylist'));
+
+  FRedis.LTRIM('mylist', 10, -10);
+  CheckEquals(0, FRedis.LLEN('mylist'));
+end;
+
 procedure TestRedisClient.TestMSET;
 begin
   FRedis.FLUSHDB;
@@ -492,6 +512,39 @@ begin
   CheckTrue(FRedis.&SET(bytesof('nome'), TEncoding.Unicode.GetBytes('אטילעש')));
   CheckTrue(FRedis.GET(bytesof('nome'), Res));
   CheckEquals('אטילעש', TEncoding.Unicode.GetString(Res));
+end;
+
+procedure TestRedisClient.TestZADD_ZRANK_ZCARD;
+var
+  lValue: Int64;
+begin
+  FRedis.DEL(['myset']);
+  FRedis.ZADD('myset', 1, 'one');
+  FRedis.ZADD('myset', 2, 'two');
+  FRedis.ZADD('myset', 3, 'three');
+  FRedis.ZADD('myset', 4, 'four');
+  FRedis.ZADD('myset', 5, 'five');
+
+  CheckEquals(5, FRedis.ZCARD('myset'));
+  CheckEquals(0, FRedis.ZCARD('notexists'));
+
+  CheckFalse(FRedis.ZRANK('myset', 'notexists', lValue));
+
+  CheckTrue(FRedis.ZRANK('myset', 'one', lValue));
+  CheckEquals(0, lValue);
+
+  CheckTrue(FRedis.ZRANK('myset', 'two', lValue));
+  CheckEquals(1, lValue);
+
+  CheckTrue(FRedis.ZRANK('myset', 'three', lValue));
+  CheckEquals(2, lValue);
+
+  CheckTrue(FRedis.ZRANK('myset', 'four', lValue));
+  CheckEquals(3, lValue);
+
+  CheckTrue(FRedis.ZRANK('myset', 'five', lValue));
+  CheckEquals(4, lValue);
+
 end;
 
 // procedure TestRedisClient.TestSUBSCRIBE;

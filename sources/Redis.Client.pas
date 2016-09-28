@@ -95,6 +95,7 @@ type
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
       : TArray<string>;
     function LLEN(const AListKey: string): Integer;
+    procedure LTRIM(const AListKey: string; const AIndexStart, AIndexStop: Integer);
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
       var APoppedAndPushedElement: string): boolean; overload;
     function BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
@@ -126,6 +127,8 @@ type
     function ZRANK(const AKey: string; const AMember: string; out ARank: Int64): boolean;
     function ZRANGE(const AKey: string; const AStart, AStop: Int64): TArray<string>;
     function ZRANGEWithScore(const AKey: string; const AStart, AStop: Int64): TArray<string>;
+    function ZINCRBY(const AKey: string; const AIncrement: Int64; const AMember: string)
+      : string;
 
     // geo
     // function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string): Integer;
@@ -562,6 +565,20 @@ begin
   NextCMD.Add(AValue);
   FTCPLibInstance.SendCmd(NextCMD);
   Result := ParseIntegerResponse(FValidResponse);
+end;
+
+procedure TRedisClient.LTRIM(const AListKey: string; const AIndexStart,
+  AIndexStop: Integer);
+var
+  lResult: string;
+begin
+  NextCMD := GetCmdList('LTRIM')
+    .Add(AListKey)
+    .Add(AIndexStart.ToString)
+    .Add(AIndexStop.ToString);
+  lResult := ExecuteWithStringResult(NextCMD);
+  if lResult <> 'OK' then
+    raise ERedisException.Create(lResult);
 end;
 
 function TRedisClient.MSET(const AKeysValues: array of string): boolean;
@@ -1069,6 +1086,14 @@ begin
   NextCMD := GetCmdList('ZCOUNT');
   NextCMD.Add(AKey).Add(AMin.ToString).Add(AMax.ToString);
   Result := ExecuteWithIntegerResult(NextCMD);
+end;
+
+function TRedisClient.ZINCRBY(const AKey: string; const AIncrement: Int64;
+  const AMember: string): string;
+begin
+  NextCMD := GetCmdList('ZINCRBY');
+  NextCMD.Add(AKey).Add(AIncrement.ToString).Add(AMember);
+  Result := ExecuteWithStringResult(NextCMD);
 end;
 
 function TRedisClient.ZRANGE(const AKey: string; const AStart,
