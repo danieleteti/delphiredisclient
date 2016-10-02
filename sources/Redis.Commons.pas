@@ -38,7 +38,8 @@ type
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
     function &SET(const AKey: string; AValue: TBytes): boolean; overload;
-    function SETExpireInSec(const AKey: string; AValue: TBytes; ASecsExpire: UInt64): boolean;
+    function &SET(const AKey: string; AValue: TBytes; ASecsExpire: UInt64): boolean; overload;
+    function &SET(const AKey: string; AValue: String; ASecsExpire: UInt64): boolean; overload;
     function SETNX(const AKey, AValue: string): boolean; overload;
     function SETNX(const AKey, AValue: TBytes): boolean; overload;
     function GET(const AKey: string; out AValue: string): boolean; overload;

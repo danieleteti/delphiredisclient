@@ -54,11 +54,11 @@ type
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
     function &SET(const AKey: string; AValue: TBytes): boolean; overload;
-    function SETExpireInSec(const AKey: TBytes; AValue: TBytes; ASecsExpire: UInt64)
+    function &SET(const AKey: TBytes; AValue: TBytes; ASecsExpire: UInt64)
       : boolean; overload;
-    function SETExpireInSec(const AKey: string; AValue: TBytes; ASecsExpire: UInt64)
+    function &SET(const AKey: string; AValue: TBytes; ASecsExpire: UInt64)
       : boolean; overload;
-    function SETExpireInSec(const AKey: string; AValue: string; ASecsExpire: UInt64)
+    function &SET(const AKey: string; AValue: string; ASecsExpire: UInt64)
       : boolean; overload;
     function SETNX(const AKey, AValue: string): boolean; overload;
     function SETNX(const AKey, AValue: TBytes): boolean; overload;
@@ -878,13 +878,13 @@ begin
   Result := SETNX(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
 end;
 
-function TRedisClient.SETExpireInSec(const AKey: string; AValue: TBytes;
+function TRedisClient.&SET(const AKey: string; AValue: TBytes;
   ASecsExpire: UInt64): boolean;
 begin
-  Result := SETExpireInSec(BytesOfUnicode(AKey), AValue, ASecsExpire);
+  Result := &SET(BytesOfUnicode(AKey), AValue, ASecsExpire);
 end;
 
-function TRedisClient.SETExpireInSec(const AKey: TBytes; AValue: TBytes;
+function TRedisClient.&SET(const AKey: TBytes; AValue: TBytes;
   ASecsExpire: UInt64): boolean;
 begin
   NextCMD := GetCmdList('SET');
@@ -897,10 +897,10 @@ begin
   Result := True;
 end;
 
-function TRedisClient.SETExpireInSec(const AKey: string; AValue: string;
+function TRedisClient.&SET(const AKey: string; AValue: string;
   ASecsExpire: UInt64): boolean;
 begin
-  Result := SETExpireInSec(BytesOfUnicode(AKey), BytesOfUnicode(AValue), ASecsExpire);
+  Result := &SET(BytesOfUnicode(AKey), BytesOfUnicode(AValue), ASecsExpire);
 end;
 
 function TRedisClient.SETNX(const AKey, AValue: TBytes): boolean;
