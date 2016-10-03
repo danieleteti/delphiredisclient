@@ -23,6 +23,7 @@ type
     procedure Write(const Bytes: System.TArray<System.Byte>); override;
     procedure WriteCrLf(const Bytes: System.TArray<System.Byte>); override;
     function LastReadWasTimedOut: boolean; override;
+    function LibName: string; override;
   end;
 
 implementation
@@ -61,6 +62,11 @@ end;
 function TRedisTCPLibINDY.LastReadWasTimedOut: boolean;
 begin
   Result := FTCPClient.IOHandler.ReadLnTimedout;
+end;
+
+function TRedisTCPLibINDY.LibName: string;
+begin
+  Result := 'indy';
 end;
 
 function TRedisTCPLibINDY.Receive(const Timeout: Int32): string;

@@ -21,6 +21,7 @@ type
       : System.TArray<System.Byte>; virtual; abstract;
     procedure Disconnect; virtual; abstract;
     function LastReadWasTimedOut: boolean; virtual; abstract;
+    function LibName: string; virtual;
   end;
 
   TRedisTCPLibClass = class of TRedisNetLibAdapter;
@@ -59,6 +60,11 @@ end;
 constructor TRedisNetLibAdapter.Create;
 begin
   inherited Create;
+end;
+
+function TRedisNetLibAdapter.LibName: string;
+begin
+  raise ERedisException.Create('This method must be overrided by the descendant classes');
 end;
 
 initialization

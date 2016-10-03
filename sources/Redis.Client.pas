@@ -109,7 +109,7 @@ type
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;
       ACallback: TProc<string, string>;
-      ATimeoutCallback: TRedisTimeoutCallback);
+      AContinueOnTimeoutCallback: TRedisTimeoutCallback = nil);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // sets
     function SADD(const AKey, AValue: TBytes): Integer; overload;
@@ -152,6 +152,7 @@ type
     procedure SetCommandTimeout(const Timeout: Int32);
     // client
     procedure ClientSetName(const ClientName: string);
+    function Clone: IRedisClient;
   end;
 
   { TRedisClient }
@@ -229,6 +230,11 @@ begin
   FTCPLibInstance.SendCmd(NextCMD);
   CheckResponseType('OK',
     StringOf(ParseSimpleStringResponseAsByte(FValidResponse)));
+end;
+
+function TRedisClient.Clone: IRedisClient;
+begin
+  Result := NewRedisClient(FHostName, FPort, FTCPLibInstance.LibName);
 end;
 
 procedure TRedisClient.Connect;
@@ -932,12 +938,12 @@ begin
 end;
 
 procedure TRedisClient.SUBSCRIBE(const AChannels: array of string;
-  ACallback: TProc<string, string>; ATimeoutCallback: TRedisTimeoutCallback);
+  ACallback: TProc<string, string>; AContinueOnTimeoutCallback: TRedisTimeoutCallback);
 var
   I: Integer;
-  Channel, Value: string;
-  Arr: TArray<string>;
-  BContinue: boolean;
+  lChannel, lValue: string;
+  lArr: TArray<string>;
+  lContinue: boolean;
 begin
   NextCMD := GetCmdList('SUBSCRIBE');
   NextCMD.AddRange(AChannels);
@@ -947,31 +953,32 @@ begin
 
   for I := 0 to Length(AChannels) - 1 do
   begin
-    Arr := ParseArrayResponse(FValidResponse);
-    if (Arr[0].ToLower <> 'subscribe') or (Arr[1] <> AChannels[I]) then
-      raise ERedisException.Create('Invalid response: ' + string.Join('-', Arr))
+    lArr := ParseArrayResponse(FValidResponse);
+    if (lArr[0].ToLower <> 'subscribe') or (lArr[1] <> AChannels[I]) then
+      raise ERedisException.Create('Invalid response: ' + string.Join('-', lArr))
   end;
   // all is fine, now read the callbacks message
   while True do
   begin
-    Arr := ParseArrayResponse(FValidResponse);
+    lArr := ParseArrayResponse(FValidResponse);
     if FTCPLibInstance.LastReadWasTimedOut then
     begin
-      if Assigned(ATimeoutCallback) then
+      lContinue := True;
+      if Assigned(AContinueOnTimeoutCallback) then
       begin
-        BContinue := ATimeoutCallback();
-        if not BContinue then
+        lContinue := AContinueOnTimeoutCallback();
+        if not lContinue then
           break;
       end;
     end
     else
     begin
-      if (not FValidResponse) or (Arr[0] <> 'message') then
+      if (not FValidResponse) or (lArr[0] <> 'message') then
         raise ERedisException.CreateFmt('Invalid reply: %s',
-          [string.Join('-', Arr)]);
-      Channel := Arr[1];
-      Value := Arr[2];
-      ACallback(Channel, Value);
+          [string.Join('-', lArr)]);
+      lChannel := lArr[1];
+      lValue := lArr[2];
+      ACallback(lChannel, lValue);
     end;
   end;
 end;

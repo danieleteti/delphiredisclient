@@ -123,7 +123,7 @@ type
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;
       ACallback: TProc<string, string>;
-      ATimeoutCallback: TRedisTimeoutCallback);
+      ATimeoutCallback: TRedisTimeoutCallback = nil);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // transactions
     function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>;
@@ -134,6 +134,7 @@ type
     // client
     procedure ClientSetName(const ClientName: string);
     procedure SetCommandTimeout(const Timeout: Int32);
+    function Clone: IRedisClient;
   end;
 
   IRedisCommand = interface
@@ -160,6 +161,7 @@ type
       : System.TArray<System.Byte>;
     procedure Disconnect;
     function LastReadWasTimedOut: boolean;
+    function LibName: String;
   end;
 
 const
