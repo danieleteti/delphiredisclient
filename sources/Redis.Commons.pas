@@ -111,6 +111,7 @@ type
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
+    procedure AUTH(const aPassword: String);
 
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand)

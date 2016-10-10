@@ -137,6 +137,7 @@ type
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
+    procedure AUTH(const aPassword: string);
     // transations
     function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>;
     procedure DISCARD;
@@ -194,6 +195,14 @@ end;
 function TRedisClient.&SET(const AKey: string; AValue: TBytes): boolean;
 begin
   Result := &SET(BytesOf(AKey), AValue);
+end;
+
+procedure TRedisClient.AUTH(const aPassword: string);
+begin
+  NextCMD := GetCmdList('AUTH');
+  NextCMD.Add(aPassword);
+  FTCPLibInstance.SendCmd(NextCMD);
+  ParseSimpleStringResponse(IsValidResponse);
 end;
 
 function TRedisClient.BLPOP(const AKeys: array of string; const ATimeout: Int32;
@@ -704,6 +713,10 @@ begin
         end
         else
           raise ERedisException.Create('Not an Integer response');
+      end;
+    '-':
+      begin
+        raise ERedisException.Create(R.Substring(1));
       end
   else
     raise ERedisException.Create('Not an Integer response');
