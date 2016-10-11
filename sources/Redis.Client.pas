@@ -138,8 +138,13 @@ type
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
     procedure AUTH(const aPassword: string);
+    // non system
+    function InTransaction: boolean;
     // transations
-    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>;
+    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>; overload;
+    procedure MULTI; overload;
+    function EXEC: TArray<string>;
+    procedure WATCH(const AKeys: array of string);
     procedure DISCARD;
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
@@ -368,6 +373,16 @@ begin
   Result := ExecuteWithIntegerResult(lCmd);
 end;
 
+function TRedisClient.EXEC: TArray<string>;
+begin
+  NextCMD := GetCmdList('EXEC');
+  FTCPLibInstance.SendCmd(NextCMD);
+  FInTransaction := False;
+  Result := ParseArrayResponse(FValidResponse);
+  if not FValidResponse then
+    raise ERedisException.Create('Transaction failed');
+end;
+
 function TRedisClient.ExecuteAndGetArray(const RedisCommand: IRedisCommand)
   : TArray<string>;
 begin
@@ -516,6 +531,11 @@ begin
   Result := ParseArrayResponse(AIsValidResponse);
 end;
 
+function TRedisClient.InTransaction: boolean;
+begin
+  Result := FInTransaction;
+end;
+
 function TRedisClient.KEYS(const AKeyPattern: string): TArray<string>;
 begin
   NextCMD := GetCmdList('KEYS');
@@ -604,6 +624,14 @@ begin
   Result := ParseSimpleStringResponse(FNotExists) = 'OK';
 end;
 
+procedure TRedisClient.MULTI;
+begin
+  NextCMD := GetCmdList('MULTI');
+  FTCPLibInstance.SendCmd(NextCMD);
+  ParseSimpleStringResponse(FValidResponse);
+  FInTransaction := True;
+end;
+
 function TRedisClient.MULTI(ARedisTansactionProc: TRedisTransactionProc)
   : TArray<string>;
 begin
@@ -621,6 +649,8 @@ begin
     NextCMD := GetCmdList('EXEC');
     FTCPLibInstance.SendCmd(NextCMD);
     Result := ParseArrayResponse(FValidResponse);
+    if not FValidResponse then
+      raise ERedisException.Create('Transaction failed');
   finally
     FInTransaction := False;
   end;
@@ -1084,6 +1114,18 @@ begin
   NextCMD.Add(AKey);
   FTCPLibInstance.SendCmd(NextCMD);
   Result := ParseIntegerResponse(FValidResponse);
+end;
+
+procedure TRedisClient.WATCH(const AKeys: array of string);
+var
+  lKey: string;
+begin
+  NextCMD := GetCmdList('WATCH');
+  for lKey in AKeys do
+  begin
+    NextCMD.Add(lKey);
+  end;
+  ExecuteWithStringResult(NextCMD); // ALWAYS 'OK' OR EXCEPTION
 end;
 
 function TRedisClient.ZADD(const AKey: string; const AScore: Int64;

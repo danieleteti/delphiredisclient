@@ -57,6 +57,10 @@ type
     procedure TestHMGetBUGWithEmptyValues;
     procedure TestAUTH;
     procedure TestHSetHGetUnicode;
+    procedure TestWATCH_MULTI_EXEC_OK;
+    procedure TestWATCH_MULTI_EXEC_Fail;
+    procedure TestWATCH_OK;
+    procedure TestWATCH_Fail;
     // procedure TestSUBSCRIBE;
   end;
 
@@ -77,10 +81,8 @@ var
   FCmd: IRedisCommand;
 begin
   // the TEST Redis instance is not protected with a password
-  FCmd := NewRedisCommand('AUTH');
-  FCmd.Add('foo');
   ExpectedException := ERedisException;
-  FRedis.ExecuteWithStringResult(FCmd);
+  FRedis.AUTH('foo');
 end;
 
 procedure TestRedisClient.TestBLPOP;
@@ -236,7 +238,7 @@ begin
   FRedis.EXPIRE('daniele', 1);
   FRedis.GET('daniele', v);
   CheckEquals('1234', v);
-  TThread.Sleep(2000);
+  TThread.Sleep(1100);
   CheckFalse(FRedis.GET('daniele', v));
 end;
 
@@ -404,7 +406,7 @@ var
   v: string;
 begin
   ArrRes := FRedis.MULTI(
-    procedure(Redis: IRedisClient)
+    procedure(const Redis: IRedisClient)
     begin
       Redis.&SET('name', 'Daniele');
       Redis.DEL(['name']);
@@ -507,11 +509,89 @@ end;
 
 procedure TestRedisClient.TestSetGetUnicode;
 var
-  Res: Tbytes;
+  Res: string;
+const
+  NonStdASCIIValue = 'אטילעשח@§°`';
 begin
-  CheckTrue(FRedis.&SET(bytesof('nome'), TEncoding.Unicode.GetBytes('אטילעש')));
-  CheckTrue(FRedis.GET(bytesof('nome'), Res));
-  CheckEquals('אטילעש', TEncoding.Unicode.GetString(Res));
+  CheckTrue(FRedis.&SET('nome', NonStdASCIIValue));
+  CheckTrue(FRedis.GET('nome', Res));
+  CheckEquals(NonStdASCIIValue, Res);
+end;
+
+procedure TestRedisClient.TestWATCH_Fail;
+var
+  lValue: string;
+  lOtherClient: IRedisClient;
+begin
+  lOtherClient := NewRedisClient;
+  FRedis.&SET('mykey', '1234');
+  FRedis.WATCH(['mykey']);
+  FRedis.GET('mykey', lValue);
+  lOtherClient.&SET('mykey', '1111'); // another client change the watched key!
+  ExpectedException := ERedisException;
+  FRedis.MULTI(
+    procedure(const R: IRedisClient)
+    begin
+      R.&SET('mykey', IntToStr(StrToInt(lValue) + 1));
+    end);
+end;
+
+procedure TestRedisClient.TestWATCH_MULTI_EXEC_OK;
+var
+  lValue: string;
+  lResp: TArray<string>;
+begin
+  FRedis.&SET('mykey', '1234');
+  FRedis.WATCH(['mykey']);
+  FRedis.GET('mykey', lValue);
+  FRedis.MULTI;
+  CheckTrue(FRedis.InTransaction, 'Is not in transaction when it should');
+  FRedis.&SET('mykey', IntToStr(StrToInt(lValue) + 1));
+  lResp := FRedis.EXEC;
+  Check(Length(lResp) = 1);
+  Check(lResp[0] = 'OK');
+  CheckFalse(FRedis.InTransaction, 'Is in transaction when it should not');
+end;
+
+procedure TestRedisClient.TestWATCH_MULTI_EXEC_Fail;
+var
+  lValue: string;
+  lOtherClient: IRedisClient;
+begin
+  lOtherClient := NewRedisClient;
+  FRedis.&SET('mykey', '1234');
+  FRedis.WATCH(['mykey']);
+  FRedis.GET('mykey', lValue);
+  lOtherClient.&SET('mykey', '1111'); // this invalidate the transaction
+  FRedis.MULTI;
+  CheckTrue(FRedis.InTransaction, 'Is not in transaction when it should');
+  FRedis.&SET('mykey', IntToStr(StrToInt(lValue) + 1));
+  try
+    FRedis.EXEC;
+    Fail('No exception efter EXEC');
+  except
+    on E: Exception do
+    begin
+      CheckInherits(ERedisException, E.ClassType);
+    end;
+  end;
+  CheckFalse(FRedis.InTransaction, 'Is in transaction when it should not');
+end;
+
+procedure TestRedisClient.TestWATCH_OK;
+var
+  lValue: string;
+  lOtherClient: IRedisClient;
+begin
+  lOtherClient := NewRedisClient;
+  FRedis.&SET('mykey', '1234');
+  FRedis.WATCH(['mykey']);
+  FRedis.GET('mykey', lValue);
+  FRedis.MULTI(
+    procedure(const R: IRedisClient)
+    begin
+      R.&SET('mykey', IntToStr(StrToInt(lValue) + 1));
+    end);
 end;
 
 procedure TestRedisClient.TestZADD_ZRANK_ZCARD;

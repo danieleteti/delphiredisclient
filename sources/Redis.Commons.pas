@@ -30,7 +30,7 @@ type
   IRedisCommand = interface;
   IRedisClient = interface;
 
-  TRedisTransactionProc = reference to procedure(Redis: IRedisClient);
+  TRedisTransactionProc = reference to procedure(const Redis: IRedisClient);
   TRedisTimeoutCallback = reference to function: boolean;
 
   IRedisClient = interface
@@ -39,7 +39,7 @@ type
     function &SET(const AKey, AValue: TBytes): boolean; overload;
     function &SET(const AKey: string; AValue: TBytes): boolean; overload;
     function &SET(const AKey: string; AValue: TBytes; ASecsExpire: UInt64): boolean; overload;
-    function &SET(const AKey: string; AValue: String; ASecsExpire: UInt64): boolean; overload;
+    function &SET(const AKey: string; AValue: string; ASecsExpire: UInt64): boolean; overload;
     function SETNX(const AKey, AValue: string): boolean; overload;
     function SETNX(const AKey, AValue: TBytes): boolean; overload;
     function GET(const AKey: string; out AValue: string): boolean; overload;
@@ -91,19 +91,19 @@ type
     function SMEMBERS(const AKey: string): TArray<string>;
     function SCARD(const AKey: string): Integer;
 
-    //ordered sets
-    function ZADD(const AKey: String; const AScore: Int64; const AMember: String): Integer;
-    function ZREM(const AKey: String; const AMember: String): Integer;
-    function ZCARD(const AKey: String): Integer;
-    function ZCOUNT(const AKey: String; const AMin, AMax: Int64): Integer;
-    function ZRANK(const AKey: String; const AMember: String; out ARank: Int64): Boolean;
-    function ZRANGE(const AKey: String; const AStart, AStop: Int64): TArray<string>;
-    function ZRANGEWithScore(const AKey: String; const AStart, AStop: Int64): TArray<string>;
-    function ZINCRBY(const AKey: String; const AIncrement: Int64; const AMember: String): string;
+    // ordered sets
+    function ZADD(const AKey: string; const AScore: Int64; const AMember: string): Integer;
+    function ZREM(const AKey: string; const AMember: string): Integer;
+    function ZCARD(const AKey: string): Integer;
+    function ZCOUNT(const AKey: string; const AMin, AMax: Int64): Integer;
+    function ZRANK(const AKey: string; const AMember: string; out ARank: Int64): boolean;
+    function ZRANGE(const AKey: string; const AStart, AStop: Int64): TArray<string>;
+    function ZRANGEWithScore(const AKey: string; const AStart, AStop: Int64): TArray<string>;
+    function ZINCRBY(const AKey: string; const AIncrement: Int64; const AMember: string): string;
 
     // geo
-//    function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)
-//      : Integer;
+    // function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)
+    // : Integer;
 
     // lua scripts
     function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
@@ -111,7 +111,7 @@ type
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
-    procedure AUTH(const aPassword: String);
+    procedure AUTH(const aPassword: string);
 
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
@@ -127,11 +127,16 @@ type
       ATimeoutCallback: TRedisTimeoutCallback = nil);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
     // transactions
-    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>;
+    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>; overload;
+    procedure MULTI; overload;
+    function EXEC: TArray<string>;
+    procedure WATCH(const AKeys: array of string);
+
     procedure DISCARD;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
+    function InTransaction: Boolean;
     // client
     procedure ClientSetName(const ClientName: string);
     procedure SetCommandTimeout(const Timeout: Int32);
@@ -162,7 +167,7 @@ type
       : System.TArray<System.Byte>;
     procedure Disconnect;
     function LastReadWasTimedOut: boolean;
-    function LibName: String;
+    function LibName: string;
   end;
 
 const
