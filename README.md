@@ -15,27 +15,39 @@ This is the  interface used to send command to the Redis server. Each method is 
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
     function &SET(const AKey, AValue: string): boolean; overload;
     function &SET(const AKey, AValue: TBytes): boolean; overload;
-    function &SET(const AKey: String; AValue: TBytes): boolean; overload;
+    function &SET(const AKey: string; AValue: TBytes): boolean; overload;
+    function &SET(const AKey: string; AValue: TBytes; ASecsExpire: UInt64): boolean; overload;
+    function &SET(const AKey: string; AValue: string; ASecsExpire: UInt64): boolean; overload;
     function SETNX(const AKey, AValue: string): boolean; overload;
     function SETNX(const AKey, AValue: TBytes): boolean; overload;
     function GET(const AKey: string; out AValue: string): boolean; overload;
     function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
-    function GET(const AKey: String; out AValue: TBytes): boolean; overload;
+    function GET(const AKey: string; out AValue: TBytes): boolean; overload;
     function DEL(const AKeys: array of string): Integer;
     function TTL(const AKey: string): Integer;
     function EXISTS(const AKey: string): boolean;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
     function INCR(const AKey: string): NativeInt;
+    function DECR(const AKey: string): NativeInt;
     function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
 
+    // strings functions
+    function APPEND(const AKey, AValue: TBytes): UInt64; overload;
+    function APPEND(const AKey, AValue: string): UInt64; overload;
+    function STRLEN(const AKey: string): UInt64;
+    function GETRANGE(const AKey: string; const AStart, AEnd: NativeInt): string;
+    function SETRANGE(const AKey: string; const AOffset: NativeInt; const AValue: string)
+      : NativeInt;
+
     // hash
-    function HSET(const AKey, aField: String; AValue: string): Integer; overload;
-    procedure HMSET(const AKey: String; aFields: TArray<String>; AValues: TArray<String>);
-    function HMGET(const AKey: String; aFields: TArray<String>): TArray<String>;
-    function HSET(const AKey, aField: String; AValue: TBytes): Integer; overload;
-    function HGET(const AKey, aField: String; out AValue: TBytes): boolean; overload;
-    function HGET(const AKey, aField: String; out AValue: string): boolean; overload;
+    function HSET(const AKey, aField: string; AValue: string): Integer; overload;
+    procedure HMSET(const AKey: string; aFields: TArray<string>; AValues: TArray<string>);
+    function HMGET(const AKey: string; aFields: TArray<string>): TArray<string>;
+    function HSET(const AKey, aField: string; AValue: TBytes): Integer; overload;
+    function HGET(const AKey, aField: string; out AValue: TBytes): boolean; overload;
+    function HGET(const AKey, aField: string; out AValue: string): boolean; overload;
+    function HDEL(const AKey: string; aFields: TArray<string>): Integer;
 
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
@@ -45,6 +57,7 @@ This is the  interface used to send command to the Redis server. Each method is 
     function LPUSHX(const AListKey: string; AValues: array of string): Integer;
     function LPOP(const AListKey: string; out Value: string): boolean;
     function LLEN(const AListKey: string): Integer;
+    procedure LTRIM(const AListKey: string; const AIndexStart, AIndexStop: Integer);
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
       : TArray<string>;
     function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
@@ -57,37 +70,63 @@ This is the  interface used to send command to the Redis server. Each method is 
       out Value: TArray<string>): boolean;
     function LREM(const AListKey: string; const ACount: Integer;
       const AValue: string): Integer;
+
     // sets
     function SADD(const AKey, AValue: TBytes): Integer; overload;
-    function SADD(const AKey, AValue: String): Integer; overload;
+    function SADD(const AKey, AValue: string): Integer; overload;
     function SREM(const AKey, AValue: TBytes): Integer; overload;
-    function SREM(const AKey, AValue: String): Integer; overload;
+    function SREM(const AKey, AValue: string): Integer; overload;
     function SMEMBERS(const AKey: string): TArray<string>;
+    function SCARD(const AKey: string): Integer;
+
+    // ordered sets
+    function ZADD(const AKey: string; const AScore: Int64; const AMember: string): Integer;
+    function ZREM(const AKey: string; const AMember: string): Integer;
+    function ZCARD(const AKey: string): Integer;
+    function ZCOUNT(const AKey: string; const AMin, AMax: Int64): Integer;
+    function ZRANK(const AKey: string; const AMember: string; out ARank: Int64): boolean;
+    function ZRANGE(const AKey: string; const AStart, AStop: Int64): TArray<string>;
+    function ZRANGEWithScore(const AKey: string; const AStart, AStop: Int64): TArray<string>;
+    function ZINCRBY(const AKey: string; const AIncrement: Int64; const AMember: string): string;
 
     // lua scripts
-    function EVAL(const AScript: String; AKeys: array of string; AValues: array of string): Integer;
+    function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
 
     // system
     procedure FLUSHDB;
     procedure SELECT(const ADBIndex: Integer);
+    procedure AUTH(const aPassword: string);
 
     // raw execute
-    function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TArray<string>;
-    function ExecuteWithIntegerResult(const RedisCommand: string): TArray<string>; overload;
-    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand): Int64; overload;
+    function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
+      : TArray<string>;
+    function ExecuteWithIntegerResult(const RedisCommand: string)
+      : TArray<string>; overload;
+    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
+      : Int64; overload;
     function ExecuteWithStringResult(const RedisCommand: IRedisCommand): string;
+    
     // pubsub
-    procedure SUBSCRIBE(const AChannels: array of string; ACallback: TProc<string, string>; ATimeoutCallback: TRedisTimeoutCallback);
+    procedure SUBSCRIBE(const AChannels: array of string;
+      ACallback: TProc<string, string>;
+      ATimeoutCallback: TRedisTimeoutCallback = nil);
     function PUBLISH(const AChannel: string; AMessage: string): Integer;
+    
     // transactions
-    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<String>;
+    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TArray<string>; overload;
+    procedure MULTI; overload;
+    function EXEC: TArray<string>;
+    procedure WATCH(const AKeys: array of string);
+
     procedure DISCARD;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
+    function InTransaction: boolean;
     // client
-    procedure ClientSetName(const ClientName: String);
+    procedure ClientSetName(const ClientName: string);
     procedure SetCommandTimeout(const Timeout: Int32);
+    function Clone: IRedisClient;
   end;
 
   ```
