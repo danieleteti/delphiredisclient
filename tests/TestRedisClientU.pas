@@ -39,7 +39,7 @@ type
     procedure TestGETRANGE;
     procedure TestSETRANGE;
     procedure TestMSET;
-    procedure TestINCR;
+    procedure TestINCR_DECR;
     procedure TestEXPIRE;
     procedure TestDelete;
     procedure TestRPUSH_RPOP;
@@ -60,7 +60,7 @@ type
     procedure TestHMSetHMGet;
     procedure TestHMGetBUGWithEmptyValues;
     procedure TestAUTH;
-    procedure TestHSetHGetUnicode;
+    procedure TestHSetHGet_Bytes;
     procedure TestWATCH_MULTI_EXEC_OK;
     procedure TestWATCH_MULTI_EXEC_Fail;
     procedure TestWATCH_OK;
@@ -300,39 +300,41 @@ begin
 end;
 
 procedure TestRedisClient.TestHSetHGet;
-const
-  C_KEY = '1000';
-  C_field = 'leandro';
-  C_VALUE = 'teste';
 var
   aResult: string;
 begin
-  FRedis.DEL([C_KEY]);
-  FRedis.HSET(C_KEY, C_field, C_VALUE);
-  FRedis.HGET(C_KEY, C_field, aResult);
-  CheckEqualsString(C_VALUE, aResult);
+  FRedis.DEL(['mykey']);
+  FRedis.HSET('mykey', 'first_name', 'Daniele');
+  FRedis.HSET('mykey', 'last_name', 'Teti');
+  FRedis.HGET('mykey', 'first_name', aResult);
+  CheckEqualsString('Daniele', aResult);
+  FRedis.HGET('mykey', 'last_name', aResult);
+  CheckEqualsString('Teti', aResult);
 end;
 
-procedure TestRedisClient.TestHSetHGetUnicode;
+procedure TestRedisClient.TestHSetHGet_Bytes;
 const
-  C_KEY = '1000';
-  C_field = 'leandro';
-  C_VALUE = 'teste';
+  C_KEY = 'mykey';
+  C_field = 'name';
+  C_VALUE = 'Daniele';
 var
   aResult: Tbytes;
 begin
   FRedis.DEL([C_KEY]);
-  FRedis.HSET(C_KEY, C_field, TEncoding.Unicode.GetBytes(C_VALUE));
+  FRedis.HSET(C_KEY, C_field, C_VALUE);
   FRedis.HGET(C_KEY, C_field, aResult);
-  CheckEqualsString(C_VALUE, TEncoding.Unicode.GetString(aResult));
+  CheckEqualsString(C_VALUE, StringOf(aResult));
 end;
 
-procedure TestRedisClient.TestINCR;
+procedure TestRedisClient.TestINCR_DECR;
 begin
   FRedis.&SET('daniele', '-1');
   CheckEquals(0, FRedis.INCR('daniele'));
   FRedis.&SET('daniele', '1');
   CheckEquals(2, FRedis.INCR('daniele'));
+  CheckEquals(1, FRedis.DECR('daniele'));
+  FRedis.DEL(['daniele']);
+  CheckEquals(-1, FRedis.DECR('daniele'));
 end;
 
 procedure TestRedisClient.TestLLEN;

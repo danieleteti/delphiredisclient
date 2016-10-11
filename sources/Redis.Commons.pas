@@ -18,11 +18,11 @@ type
     TTL_KEY_DOES_NOT_EXIST = -2;
     TTL_KEY_IS_NOT_VOLATILE = -1;
     NULL_ARRAY = '*-1';
+    NULL_BULK_STRING = '$-1';
   end;
 
   TRedisClientBase = class abstract(TInterfacedObject)
   protected
-    FUnicode: boolean;
     function BytesOfUnicode(const AUnicodeString: string): TBytes;
     function StringOfUnicode(const ABytes: TBytes): string;
   end;
@@ -51,7 +51,9 @@ type
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
     function INCR(const AKey: string): NativeInt;
+    function DECR(const AKey: string): NativeInt;
     function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
+
     // strings functions
     function APPEND(const AKey, AValue: TBytes): UInt64; overload;
     function APPEND(const AKey, AValue: string): UInt64; overload;
@@ -90,6 +92,7 @@ type
       out Value: TArray<string>): boolean;
     function LREM(const AListKey: string; const ACount: Integer;
       const AValue: string): Integer;
+
     // sets
     function SADD(const AKey, AValue: TBytes): Integer; overload;
     function SADD(const AKey, AValue: string): Integer; overload;
@@ -180,9 +183,6 @@ type
 
 function ByteToHex(InByte: byte): string;
 
-const
-  REDIS_NULL_BULK_STRING = '$-1';
-
 implementation
 
 function ByteToHex(InByte: byte): string;
@@ -196,17 +196,11 @@ end;
 
 function TRedisClientBase.BytesOfUnicode(const AUnicodeString: string): TBytes;
 begin
-  // if FUnicode then
-  // Result := TEncoding.Unicode.GetBytes(AUnicodeString)
-  // else
   Result := BytesOf(AUnicodeString);
 end;
 
 function TRedisClientBase.StringOfUnicode(const ABytes: TBytes): string;
 begin
-  // if FUnicode then
-  // Result := TEncoding.Unicode.GetString(ABytes)
-  // else
   Result := StringOf(ABytes);
 end;
 

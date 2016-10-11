@@ -68,6 +68,7 @@ type
     function DEL(const AKeys: array of string): Integer;
     function EXISTS(const AKey: string): boolean;
     function INCR(const AKey: string): NativeInt;
+    function DECR(const AKey: string): NativeInt;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
     function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
@@ -284,6 +285,12 @@ begin
   FPort := Port;
   FRedisCmdParts := TRedisCommand.Create;
   FCommandTimeout := -1;
+end;
+
+function TRedisClient.DECR(const AKey: string): NativeInt;
+begin
+  FTCPLibInstance.SendCmd(GetCmdList('DECR').Add(AKey));
+  Result := ParseIntegerResponse(FValidResponse);
 end;
 
 function TRedisClient.DEL(const AKeys: array of string): Integer;
@@ -543,7 +550,7 @@ end;
 
 function TRedisClient.INCR(const AKey: string): NativeInt;
 begin
-  FTCPLibInstance.Write(GetCmdList('INCR').Add(AKey).ToRedisCommand);
+  FTCPLibInstance.SendCmd(GetCmdList('INCR').Add(AKey));
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
@@ -706,14 +713,20 @@ begin
   if FIsTimeout then
     Exit;
 
+  if R = TRedisConsts.NULL_ARRAY then
+  begin
+    AValidResponse := False;
+    Exit;
+  end;
+
   if R.Chars[0] = '*' then
   begin
     ArrLength := R.Substring(1).ToInteger;
-    if ArrLength = -1 then // REDIS_NULL_BULK_STRING
-    begin
-      AValidResponse := False;
-      Exit;
-    end;
+    // if ArrLength = -1 then // REDIS_NULL_BULK_STRING
+    // begin
+    // AValidResponse := False;
+    // Exit;
+    // end;
   end
   else if R.Chars[0] = '-' then
     raise ERedisException.Create(R.Substring(1))
@@ -1032,7 +1045,7 @@ begin
   NextCMD := GetCmdList('SUBSCRIBE');
   NextCMD.AddRange(AChannels);
   FTCPLibInstance.SendCmd(NextCMD);
-  // just to implement a sort of non blockign subscribe
+  // just to implement a sort of non blocking subscribe
   SetCommandTimeout(RedisDefaultSubscribeTimeout);
 
   for I := 0 to Length(AChannels) - 1 do
