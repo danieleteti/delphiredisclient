@@ -47,8 +47,7 @@ type
   public
     function Tokenize(const ARedisCommand: string): TArray<string>;
     constructor Create(TCPLibInstance: IRedisNetLibAdapter;
-      const HostName: string; const Port: Word;
-      const UseUnicodeString: boolean);
+      const HostName: string; const Port: Word);
     destructor Destroy; override;
     /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
     function &SET(const AKey, AValue: string): boolean; overload;
@@ -72,6 +71,13 @@ type
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
     function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
+    // string functions
+    function APPEND(const AKey, AValue: TBytes): UInt64; overload;
+    function APPEND(const AKey, AValue: string): UInt64; overload;
+    function STRLEN(const AKey: string): UInt64;
+    function GETRANGE(const AKey: string; const AStart, AEnd: NativeInt): string;
+    function SETRANGE(const AKey: string; const AOffset: NativeInt; const AValue: string)
+      : NativeInt;
 
     // hash
     function HSET(const AKey, aField: string; AValue: string): Integer;
@@ -130,7 +136,7 @@ type
     function ZINCRBY(const AKey: string; const AIncrement: Int64; const AMember: string)
       : string;
 
-    // geo
+    // geo REDIS 3.2
     // function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string): Integer;
     // lua scripts
     function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
@@ -202,6 +208,19 @@ begin
   Result := &SET(BytesOf(AKey), AValue);
 end;
 
+function TRedisClient.APPEND(const AKey, AValue: TBytes): UInt64;
+begin
+  NextCMD := GetCmdList('APPEND');
+  NextCMD.Add(AKey).Add(AValue);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse(IsValidResponse);
+end;
+
+function TRedisClient.APPEND(const AKey, AValue: string): UInt64;
+begin
+  Result := APPEND(BytesOf(AKey), BytesOf(AValue));
+end;
+
 procedure TRedisClient.AUTH(const aPassword: string);
 begin
   NextCMD := GetCmdList('AUTH');
@@ -257,14 +276,13 @@ begin
 end;
 
 constructor TRedisClient.Create(TCPLibInstance: IRedisNetLibAdapter;
-  const HostName: string; const Port: Word; const UseUnicodeString: boolean);
+  const HostName: string; const Port: Word);
 begin
   inherited Create;
   FTCPLibInstance := TCPLibInstance;
   FHostName := HostName;
   FPort := Port;
-  FRedisCmdParts := TRedisCommand.Create(UseUnicodeString);
-  FUnicode := UseUnicodeString;
+  FRedisCmdParts := TRedisCommand.Create;
   FCommandTimeout := -1;
 end;
 
@@ -425,6 +443,14 @@ begin
   FRedisCmdParts.Clear;
   Result := FRedisCmdParts;
   Result.SetCommand(Cmd);
+end;
+
+function TRedisClient.GETRANGE(const AKey: string; const AStart,
+  AEnd: NativeInt): string;
+begin
+  NextCMD := GetCmdList('GETRANGE').Add(AKey).Add(AStart).Add(AEnd);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseSimpleStringResponse(IsValidResponse);
 end;
 
 function TRedisClient.HSET(const AKey, aField: string; AValue: string): Integer;
@@ -961,6 +987,14 @@ begin
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
 
+function TRedisClient.SETRANGE(const AKey: string; const AOffset: NativeInt;
+  const AValue: string): NativeInt;
+begin
+  NextCMD := GetCmdList('SETRANGE').Add(AKey).Add(AOffset).Add(AValue);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse(IsValidResponse);
+end;
+
 function TRedisClient.SMEMBERS(const AKey: string): TArray<string>;
 begin
   NextCMD := GetCmdList('SMEMBERS').Add(AKey);
@@ -971,6 +1005,13 @@ end;
 function TRedisClient.SREM(const AKey, AValue: string): Integer;
 begin
   Result := SREM(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
+end;
+
+function TRedisClient.STRLEN(const AKey: string): UInt64;
+begin
+  NextCMD := GetCmdList('STRLEN').Add(AKey);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseIntegerResponse(FValidResponse);
 end;
 
 function TRedisClient.SREM(const AKey, AValue: TBytes): Integer;
@@ -1006,7 +1047,6 @@ begin
     lArr := ParseArrayResponse(FValidResponse);
     if FTCPLibInstance.LastReadWasTimedOut then
     begin
-      lContinue := True;
       if Assigned(AContinueOnTimeoutCallback) then
       begin
         lContinue := AContinueOnTimeoutCallback();
@@ -1195,8 +1235,7 @@ var
   TCPLibInstance: IRedisNetLibAdapter;
 begin
   TCPLibInstance := TLibFactory.GET(ALibName);
-  Result := TRedisClient.Create(TCPLibInstance, AHostName, APort,
-    False { AUseUnicodeString } );
+  Result := TRedisClient.Create(TCPLibInstance, AHostName, APort);
   try
     TRedisClient(Result).Connect;
   except
@@ -1207,7 +1246,7 @@ end;
 
 function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 begin
-  Result := TRedisCommand.Create(False);
+  Result := TRedisCommand.Create;
   TRedisCommand(Result).SetCommand(RedisCommandString);
 end;
 

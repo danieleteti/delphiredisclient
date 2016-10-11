@@ -16,13 +16,14 @@ type
     ASTERISK_BYTE: Byte = Byte('*');
     DOLLAR_BYTE: Byte = Byte('$');
   public
-    constructor Create(AIsUnicode: Boolean); virtual;
+    constructor Create; virtual;
     destructor Destroy; override;
     function GetToken(const Index: Integer): TBytes;
     procedure Clear;
     function Count: Integer;
     function Add(ABytes: TBytes): IRedisCommand; overload;
     function Add(AString: string): IRedisCommand; overload;
+    function Add(AInteger: NativeInt): IRedisCommand; overload;
     function SetCommand(AString: string): IRedisCommand; overload;
     function AddRange(AStrings: array of string): IRedisCommand;
     function ToRedisCommand: TBytes;
@@ -40,6 +41,11 @@ function TRedisCommand.Add(AString: string): IRedisCommand;
 begin
   FParts.Add(BytesOf(AString));
   Result := Self;
+end;
+
+function TRedisCommand.Add(AInteger: NativeInt): IRedisCommand;
+begin
+  Result := Add(IntToStr(AInteger));
 end;
 
 function TRedisCommand.AddRange(AStrings: array of string): IRedisCommand;
@@ -62,11 +68,10 @@ begin
   Result := FParts.Count;
 end;
 
-constructor TRedisCommand.Create(AIsUnicode: Boolean);
+constructor TRedisCommand.Create;
 begin
   inherited Create;
   FParts := TList<TBytes>.Create;
-  FUnicode := AIsUnicode;
 end;
 
 destructor TRedisCommand.Destroy;

@@ -52,6 +52,13 @@ type
     function KEYS(const AKeyPattern: string): TArray<string>;
     function INCR(const AKey: string): NativeInt;
     function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
+    // strings functions
+    function APPEND(const AKey, AValue: TBytes): UInt64; overload;
+    function APPEND(const AKey, AValue: string): UInt64; overload;
+    function STRLEN(const AKey: string): UInt64;
+    function GETRANGE(const AKey: string; const AStart, AEnd: NativeInt): string;
+    function SETRANGE(const AKey: string; const AOffset: NativeInt; const AValue: string)
+      : NativeInt;
 
     // hash
     function HSET(const AKey, aField: string; AValue: string): Integer; overload;
@@ -136,7 +143,7 @@ type
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
     procedure Disconnect;
-    function InTransaction: Boolean;
+    function InTransaction: boolean;
     // client
     procedure ClientSetName(const ClientName: string);
     procedure SetCommandTimeout(const Timeout: Int32);
@@ -150,6 +157,7 @@ type
     function Count: Integer;
     function Add(ABytes: TBytes): IRedisCommand; overload;
     function Add(AString: string): IRedisCommand; overload;
+    function Add(AInteger: NativeInt): IRedisCommand; overload;
     function SetCommand(AString: string): IRedisCommand;
     function AddRange(AStrings: array of string): IRedisCommand;
     function ToRedisCommand: TBytes;
@@ -170,10 +178,19 @@ type
     function LibName: string;
   end;
 
+function ByteToHex(InByte: byte): string;
+
 const
   REDIS_NULL_BULK_STRING = '$-1';
 
 implementation
+
+function ByteToHex(InByte: byte): string;
+const
+  HexDigits: array [0 .. 15] of char = '0123456789ABCDEF';
+begin
+  Result := HexDigits[InByte shr 4] + HexDigits[InByte and $0F];
+end;
 
 { TRedisClientBase }
 

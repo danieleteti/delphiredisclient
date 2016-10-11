@@ -34,6 +34,10 @@ type
     procedure TestExecuteWithStringArrayResponse;
     procedure TestSetGet;
     procedure TestSetGetUnicode;
+    procedure TestAPPEND;
+    procedure TestSTRLEN;
+    procedure TestGETRANGE;
+    procedure TestSETRANGE;
     procedure TestMSET;
     procedure TestINCR;
     procedure TestEXPIRE;
@@ -76,9 +80,18 @@ begin
   FRedis := nil;
 end;
 
-procedure TestRedisClient.TestAUTH;
+procedure TestRedisClient.TestAPPEND;
 var
-  FCmd: IRedisCommand;
+  lValue: string;
+begin
+  FRedis.DEL(['mykey']);
+  CheckEquals(4, FRedis.APPEND('mykey', '1234'), 'Wrong length');
+  CheckEquals(8, FRedis.APPEND('mykey', '5678'), 'Wrong length');
+  CheckTrue(FRedis.GET('mykey', lValue), 'Key doesn''t exist');
+  CheckEquals('12345678', lValue, 'Wrong key value...');
+end;
+
+procedure TestRedisClient.TestAUTH;
 begin
   // the TEST Redis instance is not protected with a password
   ExpectedException := ERedisException;
@@ -240,6 +253,20 @@ begin
   CheckEquals('1234', v);
   TThread.Sleep(1100);
   CheckFalse(FRedis.GET('daniele', v));
+end;
+
+procedure TestRedisClient.TestGETRANGE;
+begin
+  FRedis.DEL(['mykey']);
+  CheckEquals('', FRedis.GETRANGE('mykey', 0, 1));
+  FRedis.&SET('mykey', '0123456789');
+  CheckEquals('0', FRedis.GETRANGE('mykey', 0, 0));
+  CheckEquals('01', FRedis.GETRANGE('mykey', 0, 1));
+  CheckEquals('12', FRedis.GETRANGE('mykey', 1, 2));
+  CheckEquals('0123456789', FRedis.GETRANGE('mykey', 0, -1));
+  CheckEquals('456789', FRedis.GETRANGE('mykey', 4, -1));
+  CheckEquals('45678', FRedis.GETRANGE('mykey', 4, -2));
+  CheckEquals('', FRedis.GETRANGE('mykey', 4, 2));
 end;
 
 procedure TestRedisClient.TestHMGetBUGWithEmptyValues;
@@ -518,6 +545,46 @@ begin
   CheckEquals(NonStdASCIIValue, Res);
 end;
 
+procedure TestRedisClient.TestSETRANGE;
+var
+  lValue: string;
+  lBytesValue: TArray<Byte>;
+begin
+  FRedis.&SET('mykey', '00112233445566778899');
+  CheckEquals(20, FRedis.SETRANGE('mykey', 0, 'XX'));
+  FRedis.GET('mykey', lValue);
+  CheckEquals('XX112233445566778899', lValue);
+
+  FRedis.&SET('mykey', '00112233445566778899');
+  CheckEquals(20, FRedis.SETRANGE('mykey', 2, 'XX'));
+  FRedis.GET('mykey', lValue);
+  CheckEquals('00XX2233445566778899', lValue);
+
+  FRedis.&SET('mykey', '00112233445566778899');
+  CheckEquals(20, FRedis.SETRANGE('mykey', 18, 'XX'));
+  FRedis.GET('mykey', lValue);
+  CheckEquals('001122334455667788XX', lValue);
+
+  FRedis.DEL(['mykey']);
+  CheckEquals(4, FRedis.SETRANGE('mykey', 2, 'XY'));
+  FRedis.GET('mykey', lBytesValue);
+
+  CheckEquals('00', ByteToHex(lBytesValue[0])); // padded bytes are $00
+  CheckEquals('00', ByteToHex(lBytesValue[1])); // padded bytes are $00
+  CheckEquals(IntToHex(Ord('X'), 2), ByteToHex(lBytesValue[2]));
+  CheckEquals(IntToHex(Ord('Y'), 2), ByteToHex(lBytesValue[3]));
+end;
+
+procedure TestRedisClient.TestSTRLEN;
+begin
+  FRedis.DEL(['mykey']);
+  CheckEquals(0, FRedis.STRLEN('mykey'), 'Len of a not exists key is not zero');
+  FRedis.APPEND('mykey', '1234');
+  CheckEquals(4, FRedis.STRLEN('mykey'), 'Wrong length');
+  FRedis.APPEND('mykey', '5678');
+  CheckEquals(8, FRedis.STRLEN('mykey'), 'Wrong length');
+end;
+
 procedure TestRedisClient.TestWATCH_Fail;
 var
   lValue: string;
@@ -568,7 +635,7 @@ begin
   FRedis.&SET('mykey', IntToStr(StrToInt(lValue) + 1));
   try
     FRedis.EXEC;
-    Fail('No exception efter EXEC');
+    fail('No exception efter EXEC');
   except
     on E: Exception do
     begin
