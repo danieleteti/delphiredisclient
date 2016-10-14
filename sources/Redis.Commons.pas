@@ -8,6 +8,9 @@ uses
 var
   RedisDefaultSubscribeTimeout: UInt32 = 1000;
 
+const
+  REDIS_NETLIB_INDY = 'indy';
+
 type
   ERedisException = class(Exception)
 
@@ -145,6 +148,7 @@ type
     procedure DISCARD;
     // non sys
     function Tokenize(const ARedisCommand: string): TArray<string>;
+    procedure Connect;
     procedure Disconnect;
     function InTransaction: boolean;
     // client

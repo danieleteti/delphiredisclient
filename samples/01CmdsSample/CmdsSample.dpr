@@ -1,4 +1,3 @@
-// JCL_DEBUG_EXPERT_INSERTJDBG OFF
 program CmdsSample1;
 
 {$APPTYPE CONSOLE}
@@ -15,7 +14,8 @@ var
 
 begin
   try
-    Redis := NewRedisClient('localhost');
+    Redis := TRedisClient.Create;
+    Redis.Connect;
     Redis.&SET('firstname', 'Daniele');
     Redis.GET('firstname', Value);
     WriteLn('key firstname, value ', Value);
@@ -24,7 +24,8 @@ begin
     if Redis.GET('firstname', Value) then
       write(Value)
     else
-      write('Key firstname not exists');
+      write('Key "firstname" doesn''t exist (it''s correct!)');
+
   except
     on E: Exception do
       WriteLn(E.ClassName, ': ', E.Message);

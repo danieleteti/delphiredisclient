@@ -26,6 +26,7 @@ type
     function LibName: string; override;
   end;
 
+
 implementation
 
 uses
@@ -107,6 +108,6 @@ end;
 
 initialization
 
-TLibFactory.RegisterRedisTCPLib('indy', TRedisTCPLibINDY);
+TRedisNetLibFactory.RegisterRedisTCPLib(REDIS_NETLIB_INDY, TRedisTCPLibINDY);
 
 end.

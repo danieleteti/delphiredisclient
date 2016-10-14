@@ -26,7 +26,7 @@ type
 
   TRedisTCPLibClass = class of TRedisNetLibAdapter;
 
-  TLibFactory = class sealed
+  TRedisNetLibFactory = class sealed
     class function Get(const LibName: string): IRedisNetLibAdapter;
     class procedure RegisterRedisTCPLib(const LibName: string;
       Clazz: TRedisTCPLibClass);
@@ -39,7 +39,7 @@ var
 
   { TLibFactory }
 
-class function TLibFactory.Get(const LibName: string): IRedisNetLibAdapter;
+class function TRedisNetLibFactory.Get(const LibName: string): IRedisNetLibAdapter;
 var
   Clazz: TRedisTCPLibClass;
 begin
@@ -49,7 +49,7 @@ begin
   Result := Clazz.Create;
 end;
 
-class procedure TLibFactory.RegisterRedisTCPLib(const LibName: string;
+class procedure TRedisNetLibFactory.RegisterRedisTCPLib(const LibName: string;
   Clazz: TRedisTCPLibClass);
 begin
   RedisTCPLibraryRegistry.Add(LibName, Clazz);
