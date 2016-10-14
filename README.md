@@ -1,5 +1,6 @@
 Delphi Redis client
 =================
+[[https://github.com/danieleteti/delphiredisclient/blob/master/docs/redisclientlogo.png]]
 
 Redis client for Delphi 10.1 Berlin, Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions)
 
