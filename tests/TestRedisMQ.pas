@@ -227,6 +227,6 @@ end;
 initialization
 
 // Register any test cases with the test runner
-RegisterTest(TestTRedisMQ.Suite);
+// RegisterTest(TestTRedisMQ.Suite);
 
 end.
