@@ -27,9 +27,9 @@ object Form2: TForm2
   end
   object Memo1: TMemo
     Left = 8
-    Top = 33
+    Top = 56
     Width = 290
-    Height = 392
+    Height = 369
     Anchors = [akLeft, akTop, akRight, akBottom]
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -52,5 +52,21 @@ object Form2: TForm2
     TabOrder = 1
     TextHint = 'Write your message here...'
     OnKeyUp = Edit2KeyUp
+  end
+  object Button1: TButton
+    Left = 200
+    Top = 8
+    Width = 98
+    Height = 42
+    Caption = 'Launch Another Instance'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 2
+    WordWrap = True
+    OnClick = Button1Click
   end
 end
