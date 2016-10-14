@@ -1,15 +1,15 @@
 Delphi Redis client
 =================
-[[https://github.com/danieleteti/delphiredisclient/blob/master/docs/redisclientlogo.png]]
+![](https://github.com/danieleteti/delphiredisclient/blob/master/docs/redisclientlogo.png)
 
 Redis client for Delphi 10.1 Berlin, Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions)
 
 
 This client is able to send all Redis commands and read the response using an internal parser. 
 
-Some commands have a specialized dedicated method.
+Many commands have a specialized dedicated metho which simplifies utilization.
 
-This is the  interface used to send command to the Redis server. Each method is a Redis command. Hi level methods implementing some integration design pattern are planned (e.g. Push a JSONObject, Pop a Stream and so on).
+This is the Redis Client interface used to connect, send commands and manager the Redis server. Many methods are 1-1 mapping to the Redis command with the same name (eg. SET is a map to the Redis SET command). Hi level methods implementing some integration design pattern are planned (e.g. Push a JSONObject, Pop a Stream and so on).
 
 ```Delphi
   IRedisClient = interface
