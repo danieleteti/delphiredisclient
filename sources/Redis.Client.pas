@@ -27,6 +27,7 @@ type
     function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
     procedure CheckResponseType(Expected, Actual: string);
   protected
+    procedure CheckResponseError(const aResponse: string);
     function GetCmdList(const Cmd: string): IRedisCommand;
     procedure NextToken(out Msg: string);
     function NextBytes(const ACount: UInt32): TBytes;
@@ -249,6 +250,12 @@ begin
   Result := FIsValidResponse;
 end;
 
+procedure TRedisClient.CheckResponseError(const aResponse: string);
+begin
+  if aResponse.Chars[0] = '-' then
+    raise ERedisException.Create(aResponse.Substring(1))
+end;
+
 procedure TRedisClient.CheckResponseType(Expected, Actual: string);
 begin
   if Expected <> Actual then
@@ -263,8 +270,7 @@ begin
   FNextCMD.Add('SETNAME');
   FNextCMD.Add(ClientName);
   FTCPLibInstance.SendCmd(FNextCMD);
-  CheckResponseType('OK',
-    StringOf(ParseSimpleStringResponseAsByte(FValidResponse)));
+  CheckResponseType('OK', ParseSimpleStringResponse(FValidResponse));
 end;
 
 function TRedisClient.Clone: IRedisClient;
@@ -718,11 +724,19 @@ var
   ArrLength: Integer;
   I: Integer;
 begin
+  // In RESP, the type of some data depends on the first byte:
+  // For Simple Strings the first byte of the reply is "+"
+  // For Errors the first byte of the reply is "-"
+  // For Integers the first byte of the reply is ":"
+  // For Bulk Strings the first byte of the reply is "$"
+  // For Arrays the first byte of the reply is "*"
+
   SetLength(Result, 0);
   AValidResponse := True;
   NextToken(R);
   if FIsTimeout then
     Exit;
+  CheckResponseError(R);
 
   if R = TRedisConsts.NULL_ARRAY then
   begin
@@ -739,8 +753,6 @@ begin
     // Exit;
     // end;
   end
-  else if R.Chars[0] = '-' then
-    raise ERedisException.Create(R.Substring(1))
   else
     raise ERedisException.Create('Invalid response length, invalid array response');
   SetLength(Result, ArrLength);
@@ -775,6 +787,7 @@ begin
   NextToken(R);
   if FIsTimeout then
     Exit;
+  CheckResponseError(R);
 
   case R.Chars[0] of
     ':':
@@ -794,63 +807,14 @@ begin
         else
           raise ERedisException.Create('Not an Integer response');
       end;
-    '-':
-      begin
-        raise ERedisException.Create(R.Substring(1));
-      end
   else
     raise ERedisException.Create('Not an Integer response');
   end;
 end;
 
-function TRedisClient.ParseSimpleStringResponse(var AValidResponse
-  : boolean): string;
-var
-  R: string;
-  HowMany: Integer;
+function TRedisClient.ParseSimpleStringResponse(var AValidResponse: boolean): string;
 begin
-  AValidResponse := True;
-  NextToken(R);
-  if FIsTimeout then
-  begin
-    AValidResponse := False;
-    Exit;
-  end;
-
-  if R = TRedisConsts.NULL_ARRAY then
-  begin
-    AValidResponse := True;
-    Exit(TRedisConsts.NULL_ARRAY);
-  end;
-
-  case R.Chars[0] of
-    '+':
-      Result := R.Substring(1);
-    '-':
-      raise ERedisException.Create(R.Substring(1));
-    '$':
-      begin
-        HowMany := R.Substring(1).ToInteger;
-        if HowMany >= 0 then
-        begin
-          NextToken(R);
-          if FIsTimeout then
-            Exit;
-
-          // if R.Length <> HowMany then
-          // raise ERedisException.CreateFmt('Invalid string len Expected [%d] got [%d]', [HowMany, R.Length]);
-          Result := R;
-        end
-        else if HowMany = -1 then
-        // "$-1\r\n" --> This is called a Null Bulk String.
-        begin
-          AValidResponse := False;
-          Result := '';
-        end;
-      end;
-  else
-    raise ERedisException.Create('Not a String response');
-  end;
+  Result := StringOf(ParseSimpleStringResponseAsByte(AValidResponse));
 end;
 
 function TRedisClient.ParseSimpleStringResponseAsByte(var AValidResponse
@@ -865,11 +829,34 @@ begin
   if FIsTimeout then
     Exit;
 
+  if R = TRedisConsts.NULL_BULK_STRING then
+  begin
+
+    AValidResponse := False;
+    Exit;
+  end;
+
+  if R = TRedisConsts.NULL_ARRAY then
+  begin
+    // A client library API should return a null object and not an empty Array when
+    // Redis replies with a Null Array. This is necessary to distinguish between an empty
+    // list and a different condition (for instance the timeout condition of the BLPOP command).
+    AValidResponse := False;
+    Exit;
+  end;
+  CheckResponseError(R);
+
+
+  // In RESP, the type of some data depends on the first byte:
+  // For Simple Strings the first byte of the reply is "+"
+  // For Errors the first byte of the reply is "-"
+  // For Integers the first byte of the reply is ":"
+  // For Bulk Strings the first byte of the reply is "$"
+  // For Arrays the first byte of the reply is "*"
+
   case R.Chars[0] of
     '+':
       Result := BytesOf(R.Substring(1));
-    '-':
-      raise ERedisException.Create(R.Substring(1));
     ':':
       Result := BytesOf(R.Substring(1));
     '$':
@@ -922,8 +909,9 @@ begin
   FNextCMD.Add(ALeftListKey);
   FNextCMD.Add(ATimeout.ToString);
   FTCPLibInstance.SendCmd(FNextCMD);
+
   lValue := ParseSimpleStringResponse(FValidResponse);
-  Result := not(lValue = TRedisConsts.NULL_ARRAY);
+  Result := FValidResponse; // and (not(lValue = TRedisConsts.NULL_ARRAY));
   if Result then
   begin
     APoppedAndPushedElement := lValue;

@@ -69,6 +69,7 @@ type
   end;
 
 implementation
+uses system.rtti;
 
 procedure TestRedisClient.SetUp;
 begin
@@ -83,6 +84,7 @@ end;
 procedure TestRedisClient.TestAPPEND;
 var
   lValue: string;
+  Value: TValue;
 begin
   FRedis.DEL(['mykey']);
   CheckEquals(4, FRedis.APPEND('mykey', '1234'), 'Wrong length');
