@@ -69,6 +69,8 @@ type
     procedure TestGET_NULLABLE;
     procedure TestHSetHGet_NULLABLE;
     procedure TestLPOP_RPOP_NULLABLE;
+    procedure TestBRPOP_NULLABLE;
+    procedure TestBLPOP_NULLABLE;
   end;
 
 implementation
@@ -135,6 +137,84 @@ begin
 
   CheckTrue(FRedis.BLPOP(['mylist'], 10, ArrRes));
   CheckEquals(2, Length(ArrRes));
+end;
+
+procedure TestRedisClient.TestBLPOP_NULLABLE;
+var
+  lArrRes: TRedisArray;
+begin
+  // setup list
+  FRedis.DEL(['mylist']);
+  FRedis.RPUSH('mylist', ['one', 'two']);
+
+  // pop from a non-empty list
+  lArrRes := FRedis.BLPOP(['mylist'], 1);
+  CheckEquals('mylist', lArrRes.Value[0]);
+  CheckEquals('one', lArrRes.Value[1]);
+
+  // pop from a non-empty list
+  lArrRes := FRedis.BLPOP(['mylist'], 1);
+  CheckEquals('mylist', lArrRes.Value[0]);
+  CheckEquals('two', lArrRes.Value[1]);
+
+  // pop from a empty list, check the timeout
+  lArrRes := FRedis.BLPOP(['mylist'], 1);
+  CheckTrue(lArrRes.IsNull);
+
+  // now, test if it works when another thread pushes a values into the list
+  TThread.CreateAnonymousThread(
+    procedure
+    var
+      Redis: IRedisClient;
+    begin
+      Redis := TRedisClient.Create;
+      Redis.Connect;
+      Redis.LPUSH('mylist', ['from', 'another', 'thread']);
+    end).Start;
+
+  lArrRes := FRedis.BLPOP(['mylist'], 10);
+  CheckFalse(lArrRes.IsNull);
+  CheckEquals('mylist', lArrRes.Value[0]);
+  CheckEquals('thread', lArrRes.Value[1]);
+end;
+
+procedure TestRedisClient.TestBRPOP_NULLABLE;
+var
+  lArrRes: TRedisArray;
+begin
+  // setup list
+  FRedis.DEL(['mylist']);
+  FRedis.RPUSH('mylist', ['one', 'two']);
+
+  // pop from a non-empty list
+  lArrRes := FRedis.BRPOP(['mylist'], 1);
+  CheckEquals('mylist', lArrRes.Value[0]);
+  CheckEquals('two', lArrRes.Value[1]);
+
+  // pop from a non-empty list
+  lArrRes := FRedis.BRPOP(['mylist'], 1);
+  CheckEquals('mylist', lArrRes.Value[0]);
+  CheckEquals('one', lArrRes.Value[1]);
+
+  // pop from a empty list, check the timeout
+  lArrRes := FRedis.BRPOP(['mylist'], 1);
+  CheckTrue(lArrRes.IsNull);
+
+  // now, test if it works when another thread pushes a values into the list
+  TThread.CreateAnonymousThread(
+    procedure
+    var
+      Redis: IRedisClient;
+    begin
+      Redis := TRedisClient.Create;
+      Redis.Connect;
+      Redis.RPUSH('mylist', ['from', 'another', 'thread']);
+    end).Start;
+
+  lArrRes := FRedis.BRPOP(['mylist'], 10);
+  CheckFalse(lArrRes.IsNull);
+  CheckEquals('mylist', lArrRes.Value[0]);
+  CheckEquals('thread', lArrRes.Value[1]);
 end;
 
 procedure TestRedisClient.TestBRPOP;

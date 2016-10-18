@@ -27,6 +27,7 @@ type
     function ParseIntegerResponse(var AValidResponse
       : boolean): Int64;
     function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
+    function ParseArrayResponseNULL: TRedisArray;
     procedure CheckResponseType(Expected, Actual: string);
     function ParseSimpleStringResponseAsByteNULL: TRedisBytes;
   protected
@@ -37,8 +38,10 @@ type
     function NextBytes(const ACount: UInt32): TBytes;
     /// //
     function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
-      AKeys: array of string; ATimeout: Int32; var AIsValidResponse: boolean)
-      : TArray<string>;
+      AKeys: array of string; ATimeout: Int32;
+      var AIsValidResponse: boolean): TArray<string>; overload;
+    function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
+      AKeys: array of string; ATimeout: Int32): TRedisArray; overload;
     constructor Create(TCPLibInstance: IRedisNetLibAdapter;
       const HostName: string; const Port: Word); overload;
   public
@@ -54,7 +57,8 @@ type
     function HGET(const aKey, aField: string): TRedisString; overload;
     function RPOP(const aListKey: string): TRedisString; overload;
     function LPOP(const aListKey: string): TRedisString; overload;
-
+    function BRPOP(const AKeys: array of string; const ATimeout: Int32): TRedisArray; overload;
+    function BLPOP(const AKeys: array of string; const ATimeout: Int32): TRedisArray; overload;
     { *********************************************** }
     /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
     function &SET(const aKey, aValue: string): boolean; overload;
@@ -115,9 +119,9 @@ type
     function BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
       var APoppedAndPushedElement: string; ATimeout: Int32): boolean; overload;
     function BLPOP(const AKeys: array of string; const ATimeout: Int32;
-      out Value: TArray<string>): boolean;
+      out Value: TArray<string>): boolean; overload;
     function BRPOP(const AKeys: array of string; const ATimeout: Int32;
-      out Value: TArray<string>): boolean;
+      out Value: TArray<string>): boolean; overload;
     function LREM(const aListKey: string; const ACount: Integer;
       const aValue: string): Integer;
     // pubsub
@@ -252,6 +256,13 @@ begin
   Value := InternalBlockingLeftOrRightPOP(FNextCMD, AKeys, ATimeout,
     FIsValidResponse);
   Result := FIsValidResponse;
+end;
+
+function TRedisClient.BLPOP(const AKeys: array of string;
+  const ATimeout: Int32): TRedisArray;
+begin
+  FNextCMD := GetCmdList('BLPOP');
+  Result := InternalBlockingLeftOrRightPOP(FNextCMD, AKeys, ATimeout);
 end;
 
 function TRedisClient.BRPOP(const AKeys: array of string; const ATimeout: Int32;
@@ -623,6 +634,15 @@ begin
   Result := ParseArrayResponse(AIsValidResponse);
 end;
 
+function TRedisClient.InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
+  AKeys: array of string; ATimeout: Int32): TRedisArray;
+begin
+  NextCMD.AddRange(AKeys);
+  NextCMD.Add(ATimeout.ToString);
+  FTCPLibInstance.SendCmd(NextCMD);
+  Result := ParseArrayResponseNULL;
+end;
+
 function TRedisClient.InTransaction: boolean;
 begin
   Result := FInTransaction;
@@ -815,6 +835,51 @@ begin
   end;
 end;
 
+function TRedisClient.ParseArrayResponseNULL: TRedisArray;
+var
+  R: string;
+  ArrLength: Integer;
+  I: Integer;
+  Values: TArray<TRedisString>;
+begin
+  // In RESP, the type of some data depends on the first byte:
+  // For Simple Strings the first byte of the reply is "+"
+  // For Errors the first byte of the reply is "-"
+  // For Integers the first byte of the reply is ":"
+  // For Bulk Strings the first byte of the reply is "$"
+  // For Arrays the first byte of the reply is "*"
+  Result := nil;
+  NextToken(R);
+  if FIsTimeout then
+    Exit;
+  CheckResponseError(R);
+
+  if R = TRedisConsts.NULL_ARRAY then
+  begin
+    Exit;
+  end;
+
+  if R.Chars[0] = '*' then
+  begin
+    ArrLength := R.Substring(1).ToInteger;
+  end
+  else
+    raise ERedisException.Create('Invalid response length, invalid array response');
+
+  SetLength(Values, ArrLength);
+  if ArrLength = 0 then
+    Exit;
+  I := 0;
+  while True do
+  begin
+    Values[I] := Redis_BytesToString(ParseSimpleStringResponseAsByteNULL);
+    inc(I);
+    if I >= ArrLength then
+      break;
+  end;
+  Result := Values;
+end;
+
 function TRedisClient.ParseIntegerResponse(var AValidResponse
   : boolean): Int64;
 var
@@ -1002,6 +1067,13 @@ begin
   FNextCMD.Add(aListKey);
   FTCPLibInstance.SendCmd(FNextCMD);
   Value := ParseSimpleStringResponse(Result);
+end;
+
+function TRedisClient.BRPOP(const AKeys: array of string;
+  const ATimeout: Int32): TRedisArray;
+begin
+  FNextCMD := GetCmdList('BRPOP');
+  Result := InternalBlockingLeftOrRightPOP(FNextCMD, AKeys, ATimeout);
 end;
 
 function TRedisClient.BRPOPLPUSH(const ARightListKey, ALeftListKey: string;

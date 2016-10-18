@@ -47,6 +47,8 @@ type
     function HGET(const aKey, aField: string): TRedisString; overload;
     function RPOP(const AListKey: string): TRedisString; overload;
     function LPOP(const AListKey: string): TRedisString; overload;
+    function BRPOP(const AKeys: array of string; const ATimeout: Int32): TRedisArray; overload;
+    function BLPOP(const AKeys: array of string; const ATimeout: Int32): TRedisArray; overload;
 
     { *********************************************** }
 
@@ -103,9 +105,9 @@ type
     function BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
       var APoppedAndPushedElement: string; ATimeout: Int32): boolean; overload;
     function BLPOP(const AKeys: array of string; const ATimeout: Int32;
-      out Value: TArray<string>): boolean;
+      out Value: TArray<string>): boolean; overload; deprecated 'Use BLPOP: TRedisArray';
     function BRPOP(const AKeys: array of string; const ATimeout: Int32;
-      out Value: TArray<string>): boolean;
+      out Value: TArray<string>): boolean; overload; deprecated 'Use BRPOP: TRedisArray';
     function LREM(const AListKey: string; const ACount: Integer;
       const AValue: string): Integer;
 

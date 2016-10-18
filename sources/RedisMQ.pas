@@ -7,8 +7,8 @@ uses
 
 type
   TRMQTopicPair = record
-    Topic: String;
-    Value: String;
+    Topic: string;
+    Value: string;
   end;
 
   TRMQAckMode = (AutoAck, ManualAck);
@@ -18,28 +18,28 @@ type
     FRedisClient: IRedisClient;
     FID: string;
     FHashMessageDigest5: TIdHashMessageDigest5;
-    function GenerateMessageID(const aTopicName, aMessage: String): String;
+    function GenerateMessageID(const aTopicName, aMessage: string): string;
   public
     const
     PREFIX = 'RMQ::';
-    constructor Create(aRedisClient: IRedisClient; aUniqueID: String); virtual;
+    constructor Create(aRedisClient: IRedisClient; aUniqueID: string); virtual;
     destructor Destroy; override;
-    procedure SubscribeTopic(const TopicName: String);
-    procedure UnsubscribeTopic(const TopicName: String);
-    procedure PublishToTopic(const TopicName, Value: String);
-    function ConsumeTopic(const TopicName: String; out Value: String; out MessageID: String;
+    procedure SubscribeTopic(const TopicName: string);
+    procedure UnsubscribeTopic(const TopicName: string);
+    procedure PublishToTopic(const TopicName, Value: string);
+    function ConsumeTopic(const TopicName: string; out Value: string; out MessageID: string;
       Timeout: UInt64;
       const AckMode: TRMQAckMode = TRMQAckMode.AutoAck)
       : Boolean; overload;
-    function ConsumeTopic(const TopicName: String; out Value: String; out MessageID: String;
+    function ConsumeTopic(const TopicName: string; out Value: string; out MessageID: string;
       const AckMode: TRMQAckMode = TRMQAckMode.AutoAck): Boolean; overload;
-    function Ack(const TopicName, MessageID: String): Boolean;
+    function Ack(const TopicName, MessageID: string): Boolean;
     // function ConsumeTopics(const TopicNames: array of String; out Pair: TRMQTopicPair;
     // Timeout: UInt64): Boolean;
-    function DecorateTopicNameWithClientID(const PlainTopicName: String): String;
-    function UnDecorateTopicNameWithClientID(const DecoratedTopicName: String): String;
-    function DecorateProcessingTopicNameWithClientID(const PlainTopicName: String): String;
-    function UnDecorateProcessingTopicNameWithClientID(const DecoratedTopicName: String): String;
+    function DecorateTopicNameWithClientID(const PlainTopicName: string): string;
+    function UnDecorateTopicNameWithClientID(const DecoratedTopicName: string): string;
+    function DecorateProcessingTopicNameWithClientID(const PlainTopicName: string): string;
+    function UnDecorateProcessingTopicNameWithClientID(const DecoratedTopicName: string): string;
   end;
 
 implementation
@@ -48,12 +48,12 @@ implementation
 
 uses RedisMQ.Commands, System.SysUtils, IdGlobal, IdHash;
 
-function TRedisMQ.ConsumeTopic(const TopicName: String; out Value: String; out MessageID: String;
+function TRedisMQ.ConsumeTopic(const TopicName: string; out Value: string; out MessageID: string;
   Timeout: UInt64;
   const AckMode: TRMQAckMode)
   : Boolean;
 var
-  lValues: TArray<String>;
+  lValues: TArray<string>;
   lProcessingTopicNameWithClientID: string;
   lTopicNameWithClientID: string;
 begin
@@ -90,7 +90,7 @@ begin
   end;
 end;
 
-function TRedisMQ.Ack(const TopicName, MessageID: String): Boolean;
+function TRedisMQ.Ack(const TopicName, MessageID: string): Boolean;
 var
   lTopicNameWithClientID: string;
   lValue: string;
@@ -105,8 +105,8 @@ begin
   end;
 end;
 
-function TRedisMQ.ConsumeTopic(const TopicName: String;
-  out Value: String; out MessageID: String; const AckMode: TRMQAckMode): Boolean;
+function TRedisMQ.ConsumeTopic(const TopicName: string;
+  out Value: string; out MessageID: string; const AckMode: TRMQAckMode): Boolean;
 var
   lTopicNameWithClientID: string;
   lProcessingTopicNameWithClientID: string;
@@ -158,7 +158,7 @@ end;
 // end;
 // end;
 
-constructor TRedisMQ.Create(aRedisClient: IRedisClient; aUniqueID: String);
+constructor TRedisMQ.Create(aRedisClient: IRedisClient; aUniqueID: string);
 begin
   inherited Create;
   FRedisClient := aRedisClient;
@@ -167,12 +167,12 @@ begin
 end;
 
 function TRedisMQ.DecorateProcessingTopicNameWithClientID(
-  const PlainTopicName: String): String;
+  const PlainTopicName: string): string;
 begin
   Result := PREFIX + FID + '::processing::' + PlainTopicName;
 end;
 
-function TRedisMQ.DecorateTopicNameWithClientID(const PlainTopicName: String): String;
+function TRedisMQ.DecorateTopicNameWithClientID(const PlainTopicName: string): string;
 begin
   Result := PREFIX + FID + '::' + PlainTopicName;
 end;
@@ -183,34 +183,34 @@ begin
   inherited;
 end;
 
-function TRedisMQ.GenerateMessageID(const aTopicName, aMessage: String): String;
+function TRedisMQ.GenerateMessageID(const aTopicName, aMessage: string): string;
 begin
   Result := IntToStr(FRedisClient.INCR(PREFIX + aTopicName + '::uuid'));
 end;
 
-procedure TRedisMQ.PublishToTopic(const TopicName, Value: String);
+procedure TRedisMQ.PublishToTopic(const TopicName, Value: string);
 begin
   FRedisClient.LPUSH(PREFIX + TopicName, [Value]);
   FRedisClient.EVAL(LUA_DISTRIBUTE_ITEM, [PREFIX + TopicName, PREFIX + 'subs::' + TopicName], []);
 end;
 
-procedure TRedisMQ.SubscribeTopic(const TopicName: String);
+procedure TRedisMQ.SubscribeTopic(const TopicName: string);
 begin
   FRedisClient.SADD(PREFIX + 'subs::' + TopicName, DecorateTopicNameWithClientID(TopicName));
 end;
 
 function TRedisMQ.UnDecorateProcessingTopicNameWithClientID(
-  const DecoratedTopicName: String): String;
+  const DecoratedTopicName: string): string;
 begin
   Result := DecoratedTopicName.Remove(0, PREFIX.LEngth + LEngth(FID) + LEngth('::processing::'));
 end;
 
-function TRedisMQ.UnDecorateTopicNameWithClientID(const DecoratedTopicName: String): String;
+function TRedisMQ.UnDecorateTopicNameWithClientID(const DecoratedTopicName: string): string;
 begin
   Result := DecoratedTopicName.Remove(0, PREFIX.LEngth + LEngth(FID) + 2);
 end;
 
-procedure TRedisMQ.UnsubscribeTopic(const TopicName: String);
+procedure TRedisMQ.UnsubscribeTopic(const TopicName: string);
 var
   lKeyName: string;
 begin

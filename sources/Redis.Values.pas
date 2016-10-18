@@ -31,6 +31,9 @@ type
 
   TRedisBytes = TRedisNullable<TBytes>;
 
+  TRedisArray = TRedisNullable<TArray<TRedisString>>;
+
+
 const
   VALUE_IS_NULL = 'Value is null';
 
