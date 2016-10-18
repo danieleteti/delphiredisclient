@@ -3,7 +3,7 @@ unit Redis.Commons;
 interface
 
 uses
-  System.SysUtils;
+  System.SysUtils, Redis.Values;
 
 var
   RedisDefaultSubscribeTimeout: UInt32 = 1000;
@@ -22,6 +22,7 @@ type
     TTL_KEY_IS_NOT_VOLATILE = -1;
     NULL_ARRAY = '*-1';
     NULL_BULK_STRING = '$-1';
+    ERR_NOT_A_VALID_RESPONSE = 'Not a valid response';
   end;
 
   TRedisClientBase = class abstract(TInterfacedObject)
@@ -38,49 +39,61 @@ type
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
-    function &SET(const AKey, AValue: string): boolean; overload;
-    function &SET(const AKey, AValue: TBytes): boolean; overload;
-    function &SET(const AKey: string; AValue: TBytes): boolean; overload;
-    function &SET(const AKey: string; AValue: TBytes; ASecsExpire: UInt64): boolean; overload;
-    function &SET(const AKey: string; AValue: string; ASecsExpire: UInt64): boolean; overload;
-    function SETNX(const AKey, AValue: string): boolean; overload;
-    function SETNX(const AKey, AValue: TBytes): boolean; overload;
-    function GET(const AKey: string; out AValue: string): boolean; overload;
-    function GET(const AKey: TBytes; out AValue: TBytes): boolean; overload;
-    function GET(const AKey: string; out AValue: TBytes): boolean; overload;
+
+    { *** Methods using the nullable Redis Values *** }
+    function GET(const aKey: string): TRedisString; overload;
+    function GET_AsBytes(const aKey: string): TRedisBytes;
+    function HGET_AsBytes(const aKey, aField: string): TRedisBytes;
+    function HGET(const aKey, aField: string): TRedisString; overload;
+    function RPOP(const AListKey: string): TRedisString; overload;
+    function LPOP(const AListKey: string): TRedisString; overload;
+
+    { *********************************************** }
+
+    function &SET(const aKey, AValue: string): boolean; overload;
+    function &SET(const aKey, AValue: TBytes): boolean; overload;
+    function &SET(const aKey: string; AValue: TBytes): boolean; overload;
+    function &SET(const aKey: string; AValue: TBytes; ASecsExpire: UInt64): boolean; overload;
+    function &SET(const aKey: string; AValue: string; ASecsExpire: UInt64): boolean; overload;
+    function SETNX(const aKey, AValue: string): boolean; overload;
+    function SETNX(const aKey, AValue: TBytes): boolean; overload;
+    function GET(const aKey: string; out AValue: string): boolean; overload;
+    { deprecated 'Use GET(aKey: string): TRedisString'; }
+    function GET(const aKey: TBytes; out AValue: TBytes): boolean; overload;
+    function GET(const aKey: string; out AValue: TBytes): boolean; overload;
     function DEL(const AKeys: array of string): Integer;
-    function TTL(const AKey: string): Integer;
-    function EXISTS(const AKey: string): boolean;
+    function TTL(const aKey: string): Integer;
+    function EXISTS(const aKey: string): boolean;
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TArray<string>;
-    function INCR(const AKey: string): NativeInt;
-    function DECR(const AKey: string): NativeInt;
-    function EXPIRE(const AKey: string; AExpireInSecond: UInt32): boolean;
+    function INCR(const aKey: string): NativeInt;
+    function DECR(const aKey: string): NativeInt;
+    function EXPIRE(const aKey: string; AExpireInSecond: UInt32): boolean;
 
     // strings functions
-    function APPEND(const AKey, AValue: TBytes): UInt64; overload;
-    function APPEND(const AKey, AValue: string): UInt64; overload;
-    function STRLEN(const AKey: string): UInt64;
-    function GETRANGE(const AKey: string; const AStart, AEnd: NativeInt): string;
-    function SETRANGE(const AKey: string; const AOffset: NativeInt; const AValue: string)
+    function APPEND(const aKey, AValue: TBytes): UInt64; overload;
+    function APPEND(const aKey, AValue: string): UInt64; overload;
+    function STRLEN(const aKey: string): UInt64;
+    function GETRANGE(const aKey: string; const AStart, AEnd: NativeInt): string;
+    function SETRANGE(const aKey: string; const AOffset: NativeInt; const AValue: string)
       : NativeInt;
 
     // hash
-    function HSET(const AKey, aField: string; AValue: string): Integer; overload;
-    procedure HMSET(const AKey: string; aFields: TArray<string>; AValues: TArray<string>);
-    function HMGET(const AKey: string; aFields: TArray<string>): TArray<string>;
-    function HSET(const AKey, aField: string; AValue: TBytes): Integer; overload;
-    function HGET(const AKey, aField: string; out AValue: TBytes): boolean; overload;
-    function HGET(const AKey, aField: string; out AValue: string): boolean; overload;
-    function HDEL(const AKey: string; aFields: TArray<string>): Integer;
+    function HSET(const aKey, aField: string; AValue: string): Integer; overload;
+    procedure HMSET(const aKey: string; aFields: TArray<string>; AValues: TArray<string>);
+    function HMGET(const aKey: string; aFields: TArray<string>): TArray<string>;
+    function HSET(const aKey, aField: string; AValue: TBytes): Integer; overload;
+    function HGET(const aKey, aField: string; out AValue: TBytes): boolean; overload;
+    function HGET(const aKey, aField: string; out AValue: string): boolean; overload;
+    function HDEL(const aKey: string; aFields: TArray<string>): Integer;
 
     // lists
     function RPUSH(const AListKey: string; AValues: array of string): Integer;
     function RPUSHX(const AListKey: string; AValues: array of string): Integer;
-    function RPOP(const AListKey: string; var Value: string): boolean;
+    function RPOP(const AListKey: string; var Value: string): boolean; overload;
     function LPUSH(const AListKey: string; AValues: array of string): Integer;
     function LPUSHX(const AListKey: string; AValues: array of string): Integer;
-    function LPOP(const AListKey: string; out Value: string): boolean;
+    function LPOP(const AListKey: string; out Value: string): boolean; overload;
     function LLEN(const AListKey: string): Integer;
     procedure LTRIM(const AListKey: string; const AIndexStart, AIndexStop: Integer);
     function LRANGE(const AListKey: string; IndexStart, IndexStop: Integer)
@@ -97,22 +110,22 @@ type
       const AValue: string): Integer;
 
     // sets
-    function SADD(const AKey, AValue: TBytes): Integer; overload;
-    function SADD(const AKey, AValue: string): Integer; overload;
-    function SREM(const AKey, AValue: TBytes): Integer; overload;
-    function SREM(const AKey, AValue: string): Integer; overload;
-    function SMEMBERS(const AKey: string): TArray<string>;
-    function SCARD(const AKey: string): Integer;
+    function SADD(const aKey, AValue: TBytes): Integer; overload;
+    function SADD(const aKey, AValue: string): Integer; overload;
+    function SREM(const aKey, AValue: TBytes): Integer; overload;
+    function SREM(const aKey, AValue: string): Integer; overload;
+    function SMEMBERS(const aKey: string): TArray<string>;
+    function SCARD(const aKey: string): Integer;
 
     // ordered sets
-    function ZADD(const AKey: string; const AScore: Int64; const AMember: string): Integer;
-    function ZREM(const AKey: string; const AMember: string): Integer;
-    function ZCARD(const AKey: string): Integer;
-    function ZCOUNT(const AKey: string; const AMin, AMax: Int64): Integer;
-    function ZRANK(const AKey: string; const AMember: string; out ARank: Int64): boolean;
-    function ZRANGE(const AKey: string; const AStart, AStop: Int64): TArray<string>;
-    function ZRANGEWithScore(const AKey: string; const AStart, AStop: Int64): TArray<string>;
-    function ZINCRBY(const AKey: string; const AIncrement: Int64; const AMember: string): string;
+    function ZADD(const aKey: string; const AScore: Int64; const AMember: string): Integer;
+    function ZREM(const aKey: string; const AMember: string): Integer;
+    function ZCARD(const aKey: string): Integer;
+    function ZCOUNT(const aKey: string; const AMin, AMax: Int64): Integer;
+    function ZRANK(const aKey: string; const AMember: string; out ARank: Int64): boolean;
+    function ZRANGE(const aKey: string; const AStart, AStop: Int64): TArray<string>;
+    function ZRANGEWithScore(const aKey: string; const AStart, AStop: Int64): TArray<string>;
+    function ZINCRBY(const aKey: string; const AIncrement: Int64; const AMember: string): string;
 
     // geo
     // function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)

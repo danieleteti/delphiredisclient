@@ -14,6 +14,8 @@ type
     procedure SetValue(const Value: T);
   public
     class function Create(AValue: T): TRedisNullable<T>; overload; static;
+    class function Create(AValue: TRedisNullable<T>): TRedisNullable<T>; overload; static;
+    class function Empty: TRedisNullable<T>; static;
     function HasValue: Boolean;
     procedure SetNull;
     class operator Implicit(a: TRedisNullable<T>): T; overload; inline;
@@ -25,6 +27,8 @@ type
   TRedisInteger = TRedisNullable<Integer>;
 
   TRedisString = TRedisNullable<string>;
+
+  TRedisBytes = TRedisNullable<TBytes>;
 
 const
   VALUE_IS_NULL = 'Value is null';
@@ -49,6 +53,20 @@ end;
 class function TRedisNullable<T>.Create(AValue: T): TRedisNullable<T>;
 begin
   Result.Value := AValue;
+end;
+
+class function TRedisNullable<T>.Create(
+  AValue: TRedisNullable<T>): TRedisNullable<T>;
+begin
+  if AValue.HasValue then
+    Result.Value := AValue.Value
+  else
+    Result := nil;
+end;
+
+class function TRedisNullable<T>.Empty: TRedisNullable<T>;
+begin
+  Result := nil;
 end;
 
 function TRedisNullable<T>.GetValue: T;

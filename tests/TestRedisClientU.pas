@@ -66,10 +66,14 @@ type
     procedure TestWATCH_OK;
     procedure TestWATCH_Fail;
     // procedure TestSUBSCRIBE;
+    procedure TestGET_NULLABLE;
+    procedure TestHSetHGet_NULLABLE;
+    procedure TestLPOP_RPOP_NULLABLE;
   end;
 
 implementation
-uses system.rtti;
+
+uses System.rtti, Redis.Values;
 
 procedure TestRedisClient.SetUp;
 begin
@@ -84,7 +88,6 @@ end;
 procedure TestRedisClient.TestAPPEND;
 var
   lValue: string;
-  Value: TValue;
 begin
   FRedis.DEL(['mykey']);
   CheckEquals(4, FRedis.APPEND('mykey', '1234'), 'Wrong length');
@@ -271,6 +274,19 @@ begin
   CheckEquals('', FRedis.GETRANGE('mykey', 4, 2));
 end;
 
+procedure TestRedisClient.TestGET_NULLABLE;
+var
+  lResp: TRedisString;
+begin
+  FRedis.DEL(['mykey']);
+  lResp := FRedis.GET('mykey');
+  CheckFalse(lResp.HasValue);
+  FRedis.&SET('mykey', 'abc');
+  lResp := FRedis.GET('mykey');
+  CheckTrue(lResp.HasValue);
+  CheckEquals('abc', lResp);
+end;
+
 procedure TestRedisClient.TestHMGetBUGWithEmptyValues;
 var
   Values: TArray<string>;
@@ -328,6 +344,21 @@ begin
   CheckEqualsString(C_VALUE, StringOf(aResult));
 end;
 
+procedure TestRedisClient.TestHSetHGet_NULLABLE;
+var
+  lResult: TRedisString;
+begin
+  FRedis.DEL(['mykey']);
+  FRedis.HSET('mykey', 'first_name', 'Daniele');
+  FRedis.HSET('mykey', 'last_name', 'Teti');
+  lResult := FRedis.HGET('mykey', 'first_name');
+  CheckEqualsString('Daniele', lResult);
+  lResult := FRedis.HGET('mykey', 'last_name');
+  CheckEqualsString('Teti', lResult);
+  lResult := FRedis.HGET('mykey', 'notexist');
+  CheckFalse(lResult.HasValue);
+end;
+
 procedure TestRedisClient.TestINCR_DECR;
 begin
   FRedis.&SET('daniele', '-1');
@@ -350,6 +381,24 @@ begin
   FRedis.&SET('myvalue', '3');
   ExpectedException := ERedisException;
   FRedis.LLEN('myvalue');
+end;
+
+procedure TestRedisClient.TestLPOP_RPOP_NULLABLE;
+var
+  lResp: TRedisString;
+begin
+  FRedis.DEL(['mylist']);
+  FRedis.LPUSH('mylist', ['one', 'two', 'three']);
+  lResp := FRedis.LPOP('mylist');
+  CheckEquals('three', lResp);
+  lResp := FRedis.RPOP('mylist');
+  CheckEquals('one', lResp);
+  lResp := FRedis.LPOP('mylist');
+  CheckEquals('two', lResp);
+  lResp := FRedis.LPOP('mylist');
+  CheckFalse(lResp.HasValue);
+  lResp := FRedis.RPOP('mylist');
+  CheckFalse(lResp.HasValue);
 end;
 
 procedure TestRedisClient.TestLPUSH_LPOP;
@@ -540,12 +589,13 @@ end;
 
 procedure TestRedisClient.TestSetGetUnicode;
 var
-  Res: string;
+  Res: TRedisString;
 const
   NonStdASCIIValue = 'אטילעשח@§°`';
 begin
   CheckTrue(FRedis.&SET('nome', NonStdASCIIValue));
-  CheckTrue(FRedis.GET('nome', Res));
+  Res := FRedis.GET('nome');
+  CheckTrue(Res.HasValue);
   CheckEquals(NonStdASCIIValue, Res);
 end;
 
