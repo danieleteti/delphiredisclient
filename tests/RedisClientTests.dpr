@@ -24,7 +24,9 @@ uses
   Redis.Command in '..\sources\Redis.Command.pas',
   Redis.Commons in '..\sources\Redis.Commons.pas',
   TestRedisMQ in 'TestRedisMQ.pas',
-  RedisMQ in '..\sources\RedisMQ.pas';
+  RedisMQ in '..\sources\RedisMQ.pas',
+  Redis.Values in '..\sources\Redis.Values.pas',
+  TestRedisValuesU in 'TestRedisValuesU.pas';
 
 {$R *.RES }
 

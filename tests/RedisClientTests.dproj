@@ -197,6 +197,8 @@
         <DCCReference Include="..\sources\Redis.Commons.pas"/>
         <DCCReference Include="TestRedisMQ.pas"/>
         <DCCReference Include="..\sources\RedisMQ.pas"/>
+        <DCCReference Include="..\sources\Redis.Values.pas"/>
+        <DCCReference Include="TestRedisValuesU.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
