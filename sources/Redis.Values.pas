@@ -17,6 +17,7 @@ type
     class function Create(AValue: TRedisNullable<T>): TRedisNullable<T>; overload; static;
     class function Empty: TRedisNullable<T>; static;
     function HasValue: Boolean;
+    function IsNull: Boolean;
     procedure SetNull;
     class operator Implicit(a: TRedisNullable<T>): T; overload; inline;
     class operator Implicit(a: T): TRedisNullable<T>; overload; inline;
@@ -95,6 +96,11 @@ end;
 class operator TRedisNullable<T>.Implicit(a: Pointer): TRedisNullable<T>;
 begin
   Result.SetNull;
+end;
+
+function TRedisNullable<T>.IsNull: Boolean;
+begin
+  Result := not HasValue;
 end;
 
 procedure TRedisNullable<T>.SetNull;

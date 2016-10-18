@@ -6,30 +6,36 @@ program CmdsSample1;
 
 
 uses
-  System.SysUtils, Redis.Client, Redis.NetLib.INDY, Redis.Commons;
+  System.SysUtils,
+  Redis.Commons, // Interfaces and types
+  Redis.Client, // The client itself
+  Redis.NetLib.INDY, // The tcp library used
+  Redis.Values; // nullable types for redis commands
 
 var
-  Redis: IRedisClient;
-  Value: string;
+  lRedis: IRedisClient;
+  lValue: TRedisString;
 
 begin
   try
-    Redis := TRedisClient.Create;
-    Redis.Connect;
-    Redis.&SET('firstname', 'Daniele');
-    Redis.GET('firstname', Value);
-    WriteLn('key firstname, value ', Value);
+    lRedis := TRedisClient.Create;
+    lRedis.Connect;
+    lRedis.&SET('firstname', 'Daniele');
+    lValue := lRedis.GET('firstname');
+    if not lValue.IsNull then
+      WriteLn('KEY FOUND! key "firstname" => ', lValue.Value);
     WriteLn('DEL firstname');
-    Redis.DEL(['firstname']);
-    if Redis.GET('firstname', Value) then
-      write(Value)
+    lRedis.DEL(['firstname']); // remove the key
+    lValue := lRedis.GET('firstname');
+    if lValue.IsNull then
+      WriteLn('Key "firstname" doesn''t exist (it''s correct!)')
     else
-      write('Key "firstname" doesn''t exist (it''s correct!)');
+      WriteLn(lValue.Value); // never printed
 
   except
     on E: Exception do
       WriteLn(E.ClassName, ': ', E.Message);
   end;
-  readln;
+  readln; // just to keep the command prompt open
 
 end.
