@@ -33,6 +33,19 @@ type
 
   TRedisArray = TRedisNullable<TArray<TRedisString>>;
 
+type
+  TRedisStringHelper = record helper for TRedisString
+  public
+    function ToString: string;
+  end;
+
+  TRedisArrayHelper = record helper for TRedisArray
+  protected
+    function GetItems(const aIndex: UInt64): string;
+  public
+    function ToArray: TArray<string>;
+    property Items[const aIndex: UInt64]: string read GetItems;
+  end;
 
 const
   VALUE_IS_NULL = 'Value is null';
@@ -116,6 +129,38 @@ procedure TRedisNullable<T>.SetValue(const Value: T);
 begin
   FSentinel := 'x';
   FValue := Value;
+end;
+
+{ TRedisArrayHelper }
+
+function TRedisArrayHelper.GetItems(const aIndex: UInt64): string;
+begin
+  Result := Value[aIndex];
+end;
+
+function TRedisArrayHelper.ToArray: TArray<string>;
+var
+  lItem: TRedisString;
+  i: UInt64;
+begin
+  if IsNull then
+    raise ERedisException.Create(VALUE_IS_NULL);
+  SetLength(Result, Length(FValue));
+  i := 0;
+  for lItem in FValue do
+  begin
+    Result[i] := lItem.ToString;
+    inc(i);
+  end;
+end;
+
+{ TRedisStringHelper }
+
+function TRedisStringHelper.ToString: string;
+begin
+  if IsNull then
+    Exit('(nil)');
+  Result := Value;
 end;
 
 end.

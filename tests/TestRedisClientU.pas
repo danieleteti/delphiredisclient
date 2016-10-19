@@ -15,7 +15,7 @@ uses
   TestFramework, System.Variants, IdTCPClient, Winapi.Windows, Vcl.Dialogs,
   Vcl.Forms, IdTCPConnection, Vcl.Controls, System.Classes, System.SysUtils,
   IdComponent, Winapi.Messages, IdBaseComponent, Vcl.Graphics, Vcl.StdCtrls,
-  Redis.Client, Redis.Commons;
+  Redis.Client, Redis.Commons, Redis.Values;
 
 type
   // Test methods for class IRedisClient
@@ -24,8 +24,8 @@ type
   strict private
     FRedis: IRedisClient;
   private
-    Res: string;
-    ArrRes: TArray<string>;
+    FArrRes: TArray<string>;
+    FArrResNullable: TRedisArray;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -35,6 +35,7 @@ type
     procedure TestSetGet;
     procedure TestSetGetUnicode;
     procedure TestAPPEND;
+    procedure TestKEYS;
     procedure TestSTRLEN;
     procedure TestGETRANGE;
     procedure TestSETRANGE;
@@ -75,7 +76,8 @@ type
 
 implementation
 
-uses System.rtti, Redis.Values;
+uses System.rtti, System.Generics.Collections,
+  System.Generics.Defaults;
 
 procedure TestRedisClient.SetUp;
 begin
@@ -89,13 +91,14 @@ end;
 
 procedure TestRedisClient.TestAPPEND;
 var
-  lValue: string;
+  lRes: TRedisString;
 begin
   FRedis.DEL(['mykey']);
   CheckEquals(4, FRedis.APPEND('mykey', '1234'), 'Wrong length');
   CheckEquals(8, FRedis.APPEND('mykey', '5678'), 'Wrong length');
-  CheckTrue(FRedis.GET('mykey', lValue), 'Key doesn''t exist');
-  CheckEquals('12345678', lValue, 'Wrong key value...');
+  lRes := FRedis.GET('mykey');
+  CheckTrue(lRes.HasValue, 'Key doesn''t exist');
+  CheckEquals('12345678', lRes, 'Wrong key value...');
 end;
 
 procedure TestRedisClient.TestAUTH;
@@ -107,23 +110,24 @@ end;
 
 procedure TestRedisClient.TestBLPOP;
 begin
+{$WARN SYMBOL_DEPRECATED OFF}
   // setup list
   FRedis.DEL(['mylist']);
   FRedis.RPUSH('mylist', ['one', 'two']);
 
   // pop from a non-empty list
-  CheckTrue(FRedis.BLPOP(['mylist'], 1, ArrRes));
-  CheckEquals('mylist', ArrRes[0]);
-  CheckEquals('one', ArrRes[1]);
+  CheckTrue(FRedis.BLPOP(['mylist'], 1, FArrRes));
+  CheckEquals('mylist', FArrRes[0]);
+  CheckEquals('one', FArrRes[1]);
 
   // pop from a non-empty list
-  CheckTrue(FRedis.BLPOP(['mylist'], 1, ArrRes));
-  CheckEquals('mylist', ArrRes[0]);
-  CheckEquals('two', ArrRes[1]);
+  CheckTrue(FRedis.BLPOP(['mylist'], 1, FArrRes));
+  CheckEquals('mylist', FArrRes[0]);
+  CheckEquals('two', FArrRes[1]);
 
   // pop from a empty list, check the timeout
-  CheckFalse(FRedis.BLPOP(['mylist'], 1, ArrRes));
-  CheckEquals(0, Length(ArrRes));
+  CheckFalse(FRedis.BLPOP(['mylist'], 1, FArrRes));
+  CheckEquals(0, Length(FArrRes));
 
   // now, test if it works when another thread pushes a values into the list
   TThread.CreateAnonymousThread(
@@ -135,8 +139,8 @@ begin
       Redis.RPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
 
-  CheckTrue(FRedis.BLPOP(['mylist'], 10, ArrRes));
-  CheckEquals(2, Length(ArrRes));
+  CheckTrue(FRedis.BLPOP(['mylist'], 10, FArrRes));
+  CheckEquals(2, Length(FArrRes));
 end;
 
 procedure TestRedisClient.TestBLPOP_NULLABLE;
@@ -224,18 +228,18 @@ begin
   FRedis.RPUSH('mylist', ['one', 'two']);
 
   // pop from a non-empty list
-  CheckTrue(FRedis.BRPOP(['mylist'], 1, ArrRes));
-  CheckEquals('mylist', ArrRes[0]);
-  CheckEquals('two', ArrRes[1]);
+  CheckTrue(FRedis.BRPOP(['mylist'], 1, FArrRes));
+  CheckEquals('mylist', FArrRes[0]);
+  CheckEquals('two', FArrRes[1]);
 
   // pop from a non-empty list
-  CheckTrue(FRedis.BRPOP(['mylist'], 1, ArrRes));
-  CheckEquals('mylist', ArrRes[0]);
-  CheckEquals('one', ArrRes[1]);
+  CheckTrue(FRedis.BRPOP(['mylist'], 1, FArrRes));
+  CheckEquals('mylist', FArrRes[0]);
+  CheckEquals('one', FArrRes[1]);
 
   // pop from a empty list, check the timeout
-  CheckFalse(FRedis.BRPOP(['mylist'], 1, ArrRes));
-  CheckEquals(0, Length(ArrRes));
+  CheckFalse(FRedis.BRPOP(['mylist'], 1, FArrRes));
+  CheckEquals(0, Length(FArrRes));
 
   // now, test if it works when another thread pushes a values into the list
   TThread.CreateAnonymousThread(
@@ -247,8 +251,8 @@ begin
       Redis.RPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
 
-  CheckTrue(FRedis.BRPOP(['mylist'], 10, ArrRes));
-  CheckEquals(2, Length(ArrRes));
+  CheckTrue(FRedis.BRPOP(['mylist'], 10, FArrRes));
+  CheckEquals(2, Length(FArrRes));
 end;
 
 procedure TestRedisClient.TestBRPOPLPUSH;
@@ -277,33 +281,33 @@ end;
 procedure TestRedisClient.TestCommandParser;
   procedure CheckSimpleSet;
   begin
-    CheckEquals('set', ArrRes[0]);
-    CheckEquals('nome', ArrRes[1]);
-    CheckEquals('daniele', ArrRes[2]);
+    CheckEquals('set', FArrRes[0]);
+    CheckEquals('nome', FArrRes[1]);
+    CheckEquals('daniele', FArrRes[2]);
   end;
 
   procedure CheckSimpleSet2;
   begin
-    CheckEquals('set', ArrRes[0]);
-    CheckEquals('no me', ArrRes[1]);
-    CheckEquals('da ni\ele', ArrRes[2]);
+    CheckEquals('set', FArrRes[0]);
+    CheckEquals('no me', FArrRes[1]);
+    CheckEquals('da ni\ele', FArrRes[2]);
   end;
 
 begin
-  ArrRes := FRedis.Tokenize('set nome daniele');
+  FArrRes := FRedis.Tokenize('set nome daniele');
   CheckSimpleSet;
-  ArrRes := FRedis.Tokenize('set    nome  daniele');
+  FArrRes := FRedis.Tokenize('set    nome  daniele');
   CheckSimpleSet;
-  ArrRes := FRedis.Tokenize('   set    "nome"    daniele   ');
+  FArrRes := FRedis.Tokenize('   set    "nome"    daniele   ');
   CheckSimpleSet;
-  ArrRes := FRedis.Tokenize('   set    "nome"    "daniele"   ');
+  FArrRes := FRedis.Tokenize('   set    "nome"    "daniele"   ');
   CheckSimpleSet;
-  ArrRes := FRedis.Tokenize('set  nome "daniele"');
+  FArrRes := FRedis.Tokenize('set  nome "daniele"');
   CheckSimpleSet;
-  ArrRes := FRedis.Tokenize('set  "no me" "da ni\ele"');
+  FArrRes := FRedis.Tokenize('set  "no me" "da ni\ele"');
   CheckSimpleSet2;
   ExpectedException := ERedisException;
-  ArrRes := FRedis.Tokenize('set nome "daniele');
+  FArrRes := FRedis.Tokenize('set nome "daniele');
 end;
 
 procedure TestRedisClient.TestDelete;
@@ -311,33 +315,33 @@ begin
   FRedis.&SET('NOME', 'Daniele');
   FRedis.&SET('COGNOME', 'Teti');
   CheckEquals(1, FRedis.DEL(['NOME']));
-  CheckFalse(FRedis.GET('NOME', Res));
-  CheckTrue(FRedis.GET('COGNOME', Res));
+  CheckFalse(FRedis.GET('NOME').HasValue);
+  CheckTrue(FRedis.GET('COGNOME').HasValue);
 end;
 
 procedure TestRedisClient.TestExecuteWithStringArrayResponse;
 var
-  Cmd: IRedisCommand;
+  lCmd: IRedisCommand;
 begin
   FRedis.FLUSHDB;
-  Cmd := NewRedisCommand('keys');
-  Cmd.Add('*o*');
-  CheckEquals(0, Length(FRedis.ExecuteAndGetArray(Cmd)));
+  lCmd := NewRedisCommand('keys');
+  lCmd.Add('*o*');
+  CheckTrue(FRedis.ExecuteAndGetArray(lCmd).IsNull);
   FRedis.&SET('1one', '1');
   FRedis.&SET('2one', '2');
-  CheckEquals(2, Length(FRedis.ExecuteAndGetArray(Cmd)));
+  CheckEquals(2, Length(FRedis.ExecuteAndGetArray(lCmd).Value));
 end;
 
 procedure TestRedisClient.TestEXPIRE;
 var
-  v: string;
+  lRes: TRedisString;
 begin
   FRedis.&SET('daniele', '1234');
   FRedis.EXPIRE('daniele', 1);
-  FRedis.GET('daniele', v);
-  CheckEquals('1234', v);
+  lRes := FRedis.GET('daniele');
+  CheckEquals('1234', lRes);
   TThread.Sleep(1100);
-  CheckFalse(FRedis.GET('daniele', v));
+  CheckFalse(FRedis.GET('daniele').HasValue);
 end;
 
 procedure TestRedisClient.TestGETRANGE;
@@ -369,32 +373,40 @@ end;
 
 procedure TestRedisClient.TestHMGetBUGWithEmptyValues;
 var
-  Values: TArray<string>;
+  Values: TRedisArray;
 begin
   FRedis.HSET('abc', 'Name', 'Daniele Teti');
   FRedis.HSET('abc', 'Address', '');
   FRedis.HSET('abc', 'Postcode', '12345');
   // there was an access violation here
-  Values := FRedis.HMGET('abc', ['Name', 'Address', 'Postcode']);
-  CheckEquals('Daniele Teti', Values[0]);
-  CheckEquals('', Values[1]);
-  CheckEquals('12345', Values[2]);
+  Values := FRedis.HMGET('abc', ['Name', 'Address', 'Postcode', 'notvalid', 'Postcode']);
+  CheckTrue(Values.HasValue);
+  CheckTrue(Values.Value[0].HasValue);
+  CheckEquals('Daniele Teti', Values.Value[0]);
+  CheckTrue(Values.Value[1].HasValue);
+  CheckEquals('', Values.Value[1]);
+  CheckTrue(Values.Value[2].HasValue);
+  CheckEquals('12345', Values.Value[2]);
+  CheckTrue(Values.Value[3].IsNull);
+  CheckFalse(Values.Value[3].HasValue);
+  CheckTrue(Values.Value[4].HasValue);
+  CheckEquals('12345', Values.Value[4]);
 end;
 
 procedure TestRedisClient.TestHMSetHMGet;
 const
   C_KEY = 'thekey';
 var
-  lValues: TArray<string>;
+  lValues: TRedisArray;
 begin
   FRedis.DEL([C_KEY]);
   FRedis.HMSET(C_KEY, ['field1', 'field2', 'field3'],
     ['value1', 'value2', 'value3']);
   lValues := FRedis.HMGET(C_KEY, ['field1', 'field2', 'field3']);
 
-  CheckEqualsString('value1', lValues[0]);
-  CheckEqualsString('value2', lValues[1]);
-  CheckEqualsString('value3', lValues[2]);
+  CheckEqualsString('value1', lValues.Value[0]);
+  CheckEqualsString('value2', lValues.Value[1]);
+  CheckEqualsString('value3', lValues.Value[2]);
 end;
 
 procedure TestRedisClient.TestHSetHGet;
@@ -448,6 +460,31 @@ begin
   CheckEquals(1, FRedis.DECR('daniele'));
   FRedis.DEL(['daniele']);
   CheckEquals(-1, FRedis.DECR('daniele'));
+end;
+
+procedure TestRedisClient.TestKEYS;
+var
+  lRes: TRedisArray;
+  lArr: TArray<TRedisString>;
+begin
+  FRedis.&SET('daniele1', 'value1');
+  FRedis.&SET('daniele2', 'value1');
+  FRedis.&SET('daniele3', 'value1');
+  FRedis.&SET('daniele4', 'value1');
+  lRes := FRedis.KEYS('d*');
+  lArr := lRes.Value;
+  TArray.Sort<TRedisString>(lArr, TComparer<TRedisString>.Construct(
+    function(const Left, Right: TRedisString): Integer
+    begin
+      Result := TComparer<string>.Default.Compare(Left, Right);
+    end));
+  CheckEquals('daniele1', lArr[0]);
+  CheckEquals('daniele2', lArr[1]);
+  CheckEquals('daniele3', lArr[2]);
+  CheckEquals('daniele4', lArr[3]);
+
+  lRes := FRedis.KEYS('XX*');
+  CheckTrue(lRes.IsNull);
 end;
 
 procedure TestRedisClient.TestLLEN;
@@ -504,25 +541,25 @@ procedure TestRedisClient.TestLRANGE;
 begin
   FRedis.DEL(['mylist']);
   FRedis.RPUSH('mylist', ['one', 'two', 'three', 'four', 'five']);
-  ArrRes := FRedis.LRANGE('mylist', 0, 1);
-  CheckEquals(2, Length(ArrRes));
-  CheckEquals('one', ArrRes[0]);
-  CheckEquals('two', ArrRes[1]);
+  FArrResNullable := FRedis.LRANGE('mylist', 0, 1);
+  CheckEquals(2, Length(FArrResNullable.Value));
+  CheckEquals('one', FArrResNullable.Value[0]);
+  CheckEquals('two', FArrResNullable.Value[1]);
 
-  ArrRes := FRedis.LRANGE('mylist', -1, -1);
-  CheckEquals(1, Length(ArrRes));
-  CheckEquals('five', ArrRes[0]);
+  FArrResNullable := FRedis.LRANGE('mylist', -1, -1);
+  CheckEquals(1, Length(FArrResNullable.Value));
+  CheckEquals('five', FArrResNullable.Value[0]);
 
-  ArrRes := FRedis.LRANGE('mylist', 0, 20);
-  CheckEquals(5, Length(ArrRes));
-  CheckEquals('one', ArrRes[0]);
-  CheckEquals('two', ArrRes[1]);
-  CheckEquals('three', ArrRes[2]);
-  CheckEquals('four', ArrRes[3]);
-  CheckEquals('five', ArrRes[4]);
+  FArrResNullable := FRedis.LRANGE('mylist', 0, 20);
+  CheckEquals(5, Length(FArrResNullable.Value));
+  CheckEquals('one', FArrResNullable.Value[0]);
+  CheckEquals('two', FArrResNullable.Value[1]);
+  CheckEquals('three', FArrResNullable.Value[2]);
+  CheckEquals('four', FArrResNullable.Value[3]);
+  CheckEquals('five', FArrResNullable.Value[4]);
 
-  ArrRes := FRedis.LRANGE('notexists', 0, 20);
-  CheckEquals(0, Length(ArrRes));
+  FArrResNullable := FRedis.LRANGE('notexists', 0, 20);
+  CheckTrue(FArrResNullable.IsNull);
 end;
 
 procedure TestRedisClient.TestLREM;
@@ -530,9 +567,9 @@ begin
   FRedis.DEL(['mylist']);
   FRedis.RPUSH('mylist', ['hello', 'hello', 'foo', 'hello']);
   FRedis.LREM('mylist', -2, 'hello');
-  ArrRes := FRedis.LRANGE('mylist', 0, -1);
-  CheckEquals('hello', ArrRes[0]);
-  CheckEquals('foo', ArrRes[1]);
+  FArrResNullable := FRedis.LRANGE('mylist', 0, -1);
+  CheckEquals('hello', FArrResNullable.Value[0]);
+  CheckEquals('foo', FArrResNullable.Value[1]);
 end;
 
 procedure TestRedisClient.TestLTRIM;
@@ -554,26 +591,26 @@ begin
 end;
 
 procedure TestRedisClient.TestMSET;
+var
+  lRes: TRedisArray;
 begin
   FRedis.FLUSHDB;
   CheckTrue(FRedis.MSET(['one', '1', 'two', '2', 'three', '3']));
-  ArrRes := FRedis.KEYS('*e*');
-  CheckEquals(2, Length(ArrRes));
+  lRes := FRedis.KEYS('*e*');
+  CheckEquals(2, Length(lRes.Value));
 end;
 
 procedure TestRedisClient.TestMULTI;
-var
-  v: string;
 begin
-  ArrRes := FRedis.MULTI(
+  FArrResNullable := FRedis.MULTI(
     procedure(const Redis: IRedisClient)
     begin
       Redis.&SET('name', 'Daniele');
       Redis.DEL(['name']);
     end);
-  CheckEquals('OK', ArrRes[0]);
-  CheckEquals('1', ArrRes[1]);
-  CheckFalse(FRedis.GET('name', v));
+  CheckEquals('OK', FArrResNullable.Value[0]);
+  CheckEquals('1', FArrResNullable.Value[1]);
+  CheckFalse(FRedis.GET('name').HasValue);
 end;
 
 procedure TestRedisClient.TestRPOPLPUSH;
@@ -639,21 +676,25 @@ end;
 
 procedure TestRedisClient.TestSELECT;
 var
-  v: string;
+  lRes: string;
 begin
   FRedis.SELECT(0);
   FRedis.&SET('db0', 'value0');
   FRedis.SELECT(1);
-  CheckFalse(FRedis.GET('db0', v));
+  CheckFalse(FRedis.GET('db0').HasValue);
   FRedis.SELECT(0);
-  FRedis.GET('db0', v);
-  CheckEquals('value0', v);
+  lRes := FRedis.GET('db0');
+  CheckEquals('value0', lRes);
 end;
 
 procedure TestRedisClient.TestSetGet;
 var
   Res: string;
 begin
+{$WARN SYMBOL_DEPRECATED OFF}
+  /// ///////////////////////////////////////////////////////
+  // DEPRECATION WARNINGS IN THIS TEST ARE OK! DO NOT CHANGE!
+  /// ///////////////////////////////////////////////////////
   CheckTrue(FRedis.&SET('nome', 'Daniele'));
   FRedis.GET('nome', Res);
   CheckEquals('Daniele', Res);
@@ -686,22 +727,22 @@ var
 begin
   FRedis.&SET('mykey', '00112233445566778899');
   CheckEquals(20, FRedis.SETRANGE('mykey', 0, 'XX'));
-  FRedis.GET('mykey', lValue);
+  lValue := FRedis.GET('mykey');
   CheckEquals('XX112233445566778899', lValue);
 
   FRedis.&SET('mykey', '00112233445566778899');
   CheckEquals(20, FRedis.SETRANGE('mykey', 2, 'XX'));
-  FRedis.GET('mykey', lValue);
+  lValue := FRedis.GET('mykey');
   CheckEquals('00XX2233445566778899', lValue);
 
   FRedis.&SET('mykey', '00112233445566778899');
   CheckEquals(20, FRedis.SETRANGE('mykey', 18, 'XX'));
-  FRedis.GET('mykey', lValue);
+  lValue := FRedis.GET('mykey');
   CheckEquals('001122334455667788XX', lValue);
 
   FRedis.DEL(['mykey']);
   CheckEquals(4, FRedis.SETRANGE('mykey', 2, 'XY'));
-  FRedis.GET('mykey', lBytesValue);
+  lBytesValue := FRedis.GET_AsBytes('mykey');
 
   CheckEquals('00', ByteToHex(lBytesValue[0])); // padded bytes are $00
   CheckEquals('00', ByteToHex(lBytesValue[1])); // padded bytes are $00
@@ -727,7 +768,7 @@ begin
   lOtherClient := NewRedisClient;
   FRedis.&SET('mykey', '1234');
   FRedis.WATCH(['mykey']);
-  FRedis.GET('mykey', lValue);
+  lValue := FRedis.GET('mykey');
   lOtherClient.&SET('mykey', '1111'); // another client change the watched key!
   ExpectedException := ERedisException;
   FRedis.MULTI(
@@ -740,17 +781,18 @@ end;
 procedure TestRedisClient.TestWATCH_MULTI_EXEC_OK;
 var
   lValue: string;
-  lResp: TArray<string>;
+  lResp: TRedisArray;
 begin
   FRedis.&SET('mykey', '1234');
   FRedis.WATCH(['mykey']);
-  FRedis.GET('mykey', lValue);
+  lValue := FRedis.GET('mykey');
   FRedis.MULTI;
   CheckTrue(FRedis.InTransaction, 'Is not in transaction when it should');
   FRedis.&SET('mykey', IntToStr(StrToInt(lValue) + 1));
   lResp := FRedis.EXEC;
-  Check(Length(lResp) = 1);
-  Check(lResp[0] = 'OK');
+  CheckTrue(lResp.HasValue);
+  Check(Length(lResp.Value) = 1);
+  Check(lResp.Value[0] = 'OK');
   CheckFalse(FRedis.InTransaction, 'Is in transaction when it should not');
 end;
 
@@ -762,7 +804,7 @@ begin
   lOtherClient := NewRedisClient;
   FRedis.&SET('mykey', '1234');
   FRedis.WATCH(['mykey']);
-  FRedis.GET('mykey', lValue);
+  lValue := FRedis.GET('mykey');
   lOtherClient.&SET('mykey', '1111'); // this invalidate the transaction
   FRedis.MULTI;
   CheckTrue(FRedis.InTransaction, 'Is not in transaction when it should');
@@ -787,7 +829,7 @@ begin
   lOtherClient := NewRedisClient;
   FRedis.&SET('mykey', '1234');
   FRedis.WATCH(['mykey']);
-  FRedis.GET('mykey', lValue);
+  lValue := FRedis.GET('mykey');
   FRedis.MULTI(
     procedure(const R: IRedisClient)
     begin

@@ -46,26 +46,26 @@ implementation
 
 { TRedisMQ }
 
-uses RedisMQ.Commands, System.SysUtils, IdGlobal, IdHash;
+uses RedisMQ.Commands, System.SysUtils, IdGlobal, IdHash, Redis.Values;
 
 function TRedisMQ.ConsumeTopic(const TopicName: string; out Value: string; out MessageID: string;
   Timeout: UInt64;
   const AckMode: TRMQAckMode)
   : Boolean;
 var
-  lValues: TArray<string>;
   lProcessingTopicNameWithClientID: string;
   lTopicNameWithClientID: string;
+  lResArray: TRedisArray;
 begin
   case AckMode of
     AutoAck:
       begin
-        Result := FRedisClient.BRPOP(
+        lResArray := FRedisClient.BRPOP(
           DecorateTopicNameWithClientID(TopicName),
-          Timeout,
-          lValues);
+          Timeout);
+        Result := lResArray.HasValue;
         if Result then
-          Value := lValues[1]
+          Value := lResArray.Value[1]
         else
           Value := '';
       end;
