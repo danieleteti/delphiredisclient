@@ -23,6 +23,10 @@ type
     NULL_ARRAY = '*-1';
     NULL_BULK_STRING = '$-1';
     ERR_NOT_A_VALID_RESPONSE = 'Not a valid response';
+    ERR_NOT_A_VALID_STRING_RESPONSE = 'Not a valid string response';
+    ERR_NOT_A_VALID_ARRAY_RESPONSE = 'Not a valid array response';
+    ERR_NOT_A_VALID_INTEGER_RESPONSE = 'Not a valid integer response';
+    ERR_NOT_A_VALID_COMMAND = 'Not a valid Redis command';
   end;
 
   TRedisClientBase = class abstract(TInterfacedObject)
@@ -63,6 +67,8 @@ type
     function INCR(const aKey: string): NativeInt;
     function DECR(const aKey: string): NativeInt;
     function EXPIRE(const aKey: string; aExpireInSecond: UInt32): boolean;
+    function PERSIST(const aKey: string): boolean;
+    function RANDOMKEY: TRedisString;
 
     // strings functions
     function APPEND(const aKey, aValue: TBytes): UInt64; overload;
@@ -137,15 +143,14 @@ type
     procedure FLUSHDB;
     procedure SELECT(const aDBIndex: Integer);
     procedure AUTH(const aPassword: string);
+    function MOVE(const aKey: string; const aDB: Byte): boolean;
 
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
       : TRedisArray;
-    function ExecuteWithIntegerResult(const RedisCommand: string)
-      : TArray<string>; overload;
     function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
       : Int64; overload;
-    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): string;
+    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): TRedisString;
     // pubsub
     procedure SUBSCRIBE(const aChannels: array of string;
       ACallback: TProc<string, string>;
@@ -197,11 +202,11 @@ type
     function LibName: string;
   end;
 
-function ByteToHex(InByte: byte): string;
+function ByteToHex(InByte: Byte): string;
 
 implementation
 
-function ByteToHex(InByte: byte): string;
+function ByteToHex(InByte: Byte): string;
 const
   HexDigits: array [0 .. 15] of char = '0123456789ABCDEF';
 begin

@@ -61,6 +61,8 @@ type
     procedure TestHMSetHMGet;
     procedure TestHMGetBUGWithEmptyValues;
     procedure TestAUTH;
+    procedure TestRANDOMKEY;
+    procedure TestMOVE;
     procedure TestHSetHGet_Bytes;
     procedure TestWATCH_MULTI_EXEC_OK;
     procedure TestWATCH_MULTI_EXEC_Fail;
@@ -590,6 +592,26 @@ begin
   CheckEquals(0, FRedis.LLEN('mylist'));
 end;
 
+procedure TestRedisClient.TestMOVE;
+var
+  lRes: TRedisNullable<string>;
+begin
+  FRedis.SELECT(0);
+  FRedis.FLUSHDB;
+  FRedis.SELECT(1);
+  FRedis.FLUSHDB;
+
+  FRedis.SELECT(0);
+  FRedis.&SET('mykey', '123');
+  FRedis.MOVE('mykey', 1);
+  lRes := FRedis.GET('mykey');
+  CheckTrue(lRes.IsNull);
+  FRedis.SELECT(1);
+  lRes := FRedis.GET('mykey');
+  CheckTrue(lRes.HasValue);
+  CheckEquals('123', lRes);
+end;
+
 procedure TestRedisClient.TestMSET;
 var
   lRes: TRedisArray;
@@ -611,6 +633,19 @@ begin
   CheckEquals('OK', FArrResNullable.Value[0]);
   CheckEquals('1', FArrResNullable.Value[1]);
   CheckFalse(FRedis.GET('name').HasValue);
+end;
+
+procedure TestRedisClient.TestRANDOMKEY;
+var
+  lRes: TRedisNullable<string>;
+begin
+  FRedis.FLUSHDB;
+  lRes := FRedis.RANDOMKEY;
+  CheckTrue(lRes.IsNull);
+  FRedis.&SET('mykey', 'myvalue');
+  lRes := FRedis.RANDOMKEY;
+  CheckFalse(lRes.IsNull);
+  CheckEquals('mykey', lRes.Value);
 end;
 
 procedure TestRedisClient.TestRPOPLPUSH;
