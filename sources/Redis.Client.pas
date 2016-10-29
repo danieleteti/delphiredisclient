@@ -24,9 +24,10 @@ type
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseIntegerResponse(var AValidResponse
       : boolean): Int64;
-//    function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
-//      deprecated 'Use: ParseArrayResponseNULL';
+    // function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
+    // deprecated 'Use: ParseArrayResponseNULL';
     function ParseArrayResponseNULL: TRedisArray;
+    function ParseMatrixResponse: TRedisMatrix;
     procedure CheckResponseType(Expected, Actual: string);
     function ParseSimpleStringResponseAsByteNULL: TRedisBytes;
     function ParseSimpleStringResponseAsStringNULL: TRedisString;
@@ -148,7 +149,17 @@ type
       : string;
 
     // geo REDIS 3.2
-    // function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string): Integer;
+    function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)
+      : Integer;
+    function GEODIST(const Key: string; const Member1, Member2: string; const &Unit: TRedisGeoUnit)
+      : TRedisString;
+    function GEOHASH(const Key: string; const Members: array of string): TRedisArray;
+    function GEOPOS(const Key: string; const Members: array of string): TRedisMatrix;
+    function GEORADIUS(const Key: string; const Longitude, Latitude: Extended; Radius: Extended;
+      const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisArray;
+    function GEORADIUS_WITHDIST(const Key: string; const Longitude, Latitude: Extended;
+      Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisMatrix;
+
     // lua scripts
     function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
     // system
@@ -170,6 +181,7 @@ type
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TRedisArray;
     function ExecuteAndGetArrayNULL(const RedisCommand: IRedisCommand): TRedisArray;
+    function ExecuteAndGetMatrix(const RedisCommand: IRedisCommand): TRedisMatrix;
     function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand): Int64; overload;
     function ExecuteWithStringResult(const RedisCommand: IRedisCommand): TRedisString;
     procedure Disconnect;
@@ -179,15 +191,19 @@ type
     function Clone: IRedisClient;
   end;
 
-function NewRedisClient(const AHostName: string = 'localhost';
-  const APort: Word = 6379; const ALibName: string = REDIS_NETLIB_INDY): IRedisClient;
+function NewRedisClient(const AHostName: string = 'localhost'; const APort: Word = 6379;
+  const ALibName: string = REDIS_NETLIB_INDY): IRedisClient;
 function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 
 implementation
 
 uses Redis.NetLib.Factory, System.Generics.Collections;
 
-{ TRedisClient }
+const
+  REDIS_GEO_UNIT_STRING: array [TRedisGeoUnit.Meters .. TRedisGeoUnit.Feet]
+    of string = ('m', 'km', 'mi', 'ft');
+
+  { TRedisClient }
 
 function TRedisClient.SADD(const aKey, aValue: TBytes): Integer;
 begin
@@ -460,6 +476,15 @@ function TRedisClient.ExecuteAndGetArrayNULL(
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseArrayResponseNULL;
+  if FTCPLibInstance.LastReadWasTimedOut then
+    Exit;
+end;
+
+function TRedisClient.ExecuteAndGetMatrix(
+  const RedisCommand: IRedisCommand): TRedisMatrix;
+begin
+  FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
+  Result := ParseMatrixResponse;
   if FTCPLibInstance.LastReadWasTimedOut then
     Exit;
 end;
@@ -804,59 +829,59 @@ begin
   FTCPLibInstance.ReceiveBytes(ACount, FCommandTimeout);
 end;
 
-//function TRedisClient.ParseArrayResponse(var AValidResponse: boolean)
-//  : TArray<string>;
-//var
-//  lRes: TRedisArray;
-//begin
-//  lRes := ParseArrayResponseNULL;
-//  AValidResponse := lRes.HasValue;
-//  if AValidResponse then
-//    Result := lRes.ToArray;
+// function TRedisClient.ParseArrayResponse(var AValidResponse: boolean)
+// : TArray<string>;
+// var
+// lRes: TRedisArray;
+// begin
+// lRes := ParseArrayResponseNULL;
+// AValidResponse := lRes.HasValue;
+// if AValidResponse then
+// Result := lRes.ToArray;
 //
-//  // In RESP, the type of some data depends on the first byte:
-//  // For Simple Strings the first byte of the reply is "+"
-//  // For Errors the first byte of the reply is "-"
-//  // For Integers the first byte of the reply is ":"
-//  // For Bulk Strings the first byte of the reply is "$"
-//  // For Arrays the first byte of the reply is "*"
+// // In RESP, the type of some data depends on the first byte:
+// // For Simple Strings the first byte of the reply is "+"
+// // For Errors the first byte of the reply is "-"
+// // For Integers the first byte of the reply is ":"
+// // For Bulk Strings the first byte of the reply is "$"
+// // For Arrays the first byte of the reply is "*"
 //
-//  // SetLength(Result, 0);
-//  // AValidResponse := True;
-//  // NextToken(R);
-//  // if FIsTimeout then
-//  // Exit;
-//  // CheckResponseError(R);
-//  //
-//  // if R = TRedisConsts.NULL_ARRAY then
-//  // begin
-//  // AValidResponse := False;
-//  // Exit;
-//  // end;
-//  //
-//  // if R.Chars[0] = '*' then
-//  // begin
-//  // ArrLength := R.Substring(1).ToInteger;
-//  // // if ArrLength = -1 then // REDIS_NULL_BULK_STRING
-//  // // begin
-//  // // AValidResponse := False;
-//  // // Exit;
-//  // // end;
-//  // end
-//  // else
-//  // raise ERedisException.Create('Invalid response length, invalid array response');
-//  // SetLength(Result, ArrLength);
-//  // if ArrLength = 0 then
-//  // Exit;
-//  // I := 0;
-//  // while True do
-//  // begin
-//  // Result[I] := StringOfUnicode(ParseSimpleStringResponseAsByte(FNotExists));
-//  // inc(I);
-//  // if I >= ArrLength then
-//  // break;
-//  // end;
-//end;
+// // SetLength(Result, 0);
+// // AValidResponse := True;
+// // NextToken(R);
+// // if FIsTimeout then
+// // Exit;
+// // CheckResponseError(R);
+// //
+// // if R = TRedisConsts.NULL_ARRAY then
+// // begin
+// // AValidResponse := False;
+// // Exit;
+// // end;
+// //
+// // if R.Chars[0] = '*' then
+// // begin
+// // ArrLength := R.Substring(1).ToInteger;
+// // // if ArrLength = -1 then // REDIS_NULL_BULK_STRING
+// // // begin
+// // // AValidResponse := False;
+// // // Exit;
+// // // end;
+// // end
+// // else
+// // raise ERedisException.Create('Invalid response length, invalid array response');
+// // SetLength(Result, ArrLength);
+// // if ArrLength = 0 then
+// // Exit;
+// // I := 0;
+// // while True do
+// // begin
+// // Result[I] := StringOfUnicode(ParseSimpleStringResponseAsByte(FNotExists));
+// // inc(I);
+// // if I >= ArrLength then
+// // break;
+// // end;
+// end;
 
 function TRedisClient.ParseArrayResponseNULL: TRedisArray;
 var
@@ -946,6 +971,52 @@ begin
   else
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_INTEGER_RESPONSE);
   end;
+end;
+
+function TRedisClient.ParseMatrixResponse: TRedisMatrix;
+var
+  R: string;
+  ArrLength: Integer;
+  I: Integer;
+  Values: TArray<TRedisArray>;
+begin
+  // In RESP, the type of some data depends on the first byte:
+  // For Simple Strings the first byte of the reply is "+"
+  // For Errors the first byte of the reply is "-"
+  // For Integers the first byte of the reply is ":"
+  // For Bulk Strings the first byte of the reply is "$"
+  // For Arrays the first byte of the reply is "*"
+  Result := nil;
+  NextToken(R);
+  if FIsTimeout then
+    Exit;
+  CheckResponseError(R);
+
+  if R = TRedisConsts.NULL_ARRAY then
+  begin
+    Exit;
+  end;
+
+  if R.Chars[0] = '*' then
+  begin
+    ArrLength := R.Substring(1).ToInteger;
+  end
+  else
+    raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_ARRAY_RESPONSE);
+
+  SetLength(Values, ArrLength);
+  if ArrLength = 0 then
+    Exit;
+  I := 0;
+  while True do
+  begin
+    Values[I] := ParseArrayResponseNULL;
+    // Redis_BytesToString(ParseSimpleStringResponseAsByteNULL);
+    inc(I);
+    if I >= ArrLength then
+      break;
+  end;
+  Result := Values;
 end;
 
 function TRedisClient.ParseSimpleStringResponse(var AValidResponse: boolean): string;
@@ -1219,7 +1290,7 @@ begin
   for I := 0 to Length(AChannels) - 1 do
   begin
     lArrNull := ParseArrayResponseNULL;
-    if (lArrNull.Items[0].ToLower <> 'subscribe') or (lArrNull.Items[1] <> AChannels[I]) then
+    if (lArrNull.Items[0].Value.ToLower <> 'subscribe') or (lArrNull.Items[1] <> AChannels[I]) then
       raise ERedisException.Create('Invalid subscription response: ' + string.Join('-',
         lArrNull.ToArray))
   end;
@@ -1432,18 +1503,84 @@ begin
   TRedisCommand(Result).SetCommand(RedisCommandString);
 end;
 
-// function TRedisClient.GEOADD(const Key: string; const Latitude,
-// Longitude: Extended; Member: string): Integer;
-// var
-// lCmd: IRedisCommand;
-// begin
-// lCmd := NewRedisCommand('GEOADD');
-// lCmd.Add(Key);
-// lCmd.Add(FormatFloat('0.0000000', Latitude));
-// lCmd.Add(FormatFloat('0.0000000', Longitude));
-// lCmd.Add(Member);
-// Result := ExecuteWithIntegerResult(lCmd);
-// end;
+function TRedisClient.GEOADD(const Key: string; const Latitude,
+  Longitude: Extended; Member: string): Integer;
+var
+  lCmd: IRedisCommand;
+begin
+  lCmd := NewRedisCommand('GEOADD');
+  lCmd.Add(Key);
+  lCmd.Add(FormatFloat('0.0000000', Latitude));
+  lCmd.Add(FormatFloat('0.0000000', Longitude));
+  lCmd.Add(Member);
+  Result := ExecuteWithIntegerResult(lCmd);
+end;
+
+function TRedisClient.GEODIST(const Key, Member1, Member2: string;
+  const &Unit: TRedisGeoUnit): TRedisString;
+var
+  lCmd: IRedisCommand;
+begin
+  lCmd := NewRedisCommand('GEODIST');
+  lCmd.Add(Key);
+  lCmd.Add(Member1);
+  lCmd.Add(Member2);
+  lCmd.Add(REDIS_GEO_UNIT_STRING[&Unit]);
+  Result := ExecuteWithStringResult(lCmd);
+end;
+
+function TRedisClient.GEOHASH(const Key: string;
+  const Members: array of string): TRedisArray;
+var
+  lCmd: IRedisCommand;
+  lMember: string;
+begin
+  lCmd := NewRedisCommand('GEOHASH');
+  lCmd.Add(Key);
+  for lMember in Members do
+  begin
+    lCmd.Add(lMember);
+  end;
+  Result := ExecuteAndGetArrayNULL(lCmd);
+end;
+
+function TRedisClient.GEOPOS(const Key: string;
+  const Members: array of string): TRedisMatrix;
+var
+  lCmd: IRedisCommand;
+  lMember: string;
+begin
+  lCmd := NewRedisCommand('GEOPOS');
+  lCmd.Add(Key);
+  for lMember in Members do
+  begin
+    lCmd.Add(lMember);
+  end;
+  Result := ExecuteAndGetMatrix(lCmd);
+end;
+
+function TRedisClient.GEORADIUS(const Key: string; const Longitude,
+  Latitude: Extended; Radius: Extended;
+  const &Unit: TRedisGeoUnit): TRedisArray;
+var
+  lCmd: IRedisCommand;
+  lMember: string;
+begin
+  lCmd := NewRedisCommand('GEORADIUS');
+  lCmd.Add(Key);
+  lCmd.Add(FormatFloat('0.0000000', Latitude));
+  lCmd.Add(FormatFloat('0.0000000', Longitude));
+  lCmd.Add(FormatFloat('0.0000000', Radius));
+  lCmd.Add(REDIS_GEO_UNIT_STRING[&Unit]);
+  Result := ExecuteAndGetArrayNULL(lCmd);
+end;
+
+function TRedisClient.GEORADIUS_WITHDIST(const Key: string; const Longitude,
+  Latitude: Extended; Radius: Extended;
+  const &Unit: TRedisGeoUnit): TRedisMatrix;
+begin
+
+end;
 
 function TRedisClient.GET(const aKey: string; out aValue: TBytes): boolean;
 begin

@@ -17,6 +17,11 @@ uses
   IdComponent, Winapi.Messages, IdBaseComponent, Vcl.Graphics, Vcl.StdCtrls,
   Redis.Client, Redis.Commons, Redis.Values;
 
+const
+  REDIS_SERVER_ADDRESS = '192.168.99.100';
+  KEY_GEODATA = 'geodata';
+  // REDIS_SERVER_ADDRESS = '127.0.0.1';
+
 type
   // Test methods for class IRedisClient
 
@@ -26,6 +31,7 @@ type
   private
     FArrRes: TArray<string>;
     FArrResNullable: TRedisArray;
+    procedure LoadGeoData;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -74,6 +80,12 @@ type
     procedure TestLPOP_RPOP_NULLABLE;
     procedure TestBRPOP_NULLABLE;
     procedure TestBLPOP_NULLABLE;
+
+    // test Redis 3.2+ commands
+    procedure TestGEODIST;
+    procedure TestGEOPOS;
+    procedure TestGEOHASH;
+    procedure TestGEORADIUS;
   end;
 
 implementation
@@ -81,9 +93,56 @@ implementation
 uses System.rtti, System.Generics.Collections,
   System.Generics.Defaults;
 
+procedure TestRedisClient.LoadGeoData;
+var
+  lReader: TStreamReader;
+  lLine: string;
+  lPieces: TArray<string>;
+  lLat: string;
+  lLon: string;
+  lCity: string;
+const
+  CITY = 1;
+  LAT = 3;
+  LON = 4;
+begin
+  if FRedis.EXISTS(KEY_GEODATA) then
+    Exit;
+
+  lReader := TStreamReader.Create(TFileStream.Create('ITALIANCITIES.TXT',
+    fmOpenRead,
+    fmShareExclusive), TEncoding.UTF8);
+  try
+    lReader.OwnStream;
+    lLine := lReader.ReadLine; // headers
+    FRedis.DEL([KEY_GEODATA]);
+    while not lReader.EndOfStream do
+    begin
+      lLine := lReader.ReadLine;
+      if lLine.IsEmpty or (lLine.Chars[0] <> '(') then
+        Continue;
+      lPieces := lLine.Split([',']);
+      if Length(lPieces) <> 10 then
+        Continue;
+      lLat := lPieces[LAT].Trim.DeQuotedString;
+      lLon := lPieces[LON].Trim.DeQuotedString;
+      lCity := lPieces[CITY].Trim.DeQuotedString.ToLower;
+      try
+        FRedis.GEOADD(KEY_GEODATA, StrToFloat(lLat), StrToFloat(lLon), lCity);
+      except
+        // ignore invalid coords in the file
+      end;
+    end;
+  finally
+    lReader.Free;
+  end;
+  FRedis.EXPIRE(KEY_GEODATA, 30 * 60);
+end;
+
 procedure TestRedisClient.SetUp;
 begin
-  FRedis := NewRedisClient('localhost', 6379, 'indy');
+  FRedis := TRedisClient.Create(REDIS_SERVER_ADDRESS, 6379, 'indy');
+  FRedis.Connect;
 end;
 
 procedure TestRedisClient.TearDown;
@@ -137,7 +196,7 @@ begin
     var
       Redis: IRedisClient;
     begin
-      Redis := NewRedisClient('localhost');
+      Redis := NewRedisClient(REDIS_SERVER_ADDRESS);
       Redis.RPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
 
@@ -173,7 +232,7 @@ begin
     var
       Redis: IRedisClient;
     begin
-      Redis := TRedisClient.Create;
+      Redis := TRedisClient.Create(REDIS_SERVER_ADDRESS);
       Redis.Connect;
       Redis.LPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
@@ -212,7 +271,7 @@ begin
     var
       Redis: IRedisClient;
     begin
-      Redis := TRedisClient.Create;
+      Redis := TRedisClient.Create(REDIS_SERVER_ADDRESS);
       Redis.Connect;
       Redis.RPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
@@ -249,7 +308,7 @@ begin
     var
       Redis: IRedisClient;
     begin
-      Redis := NewRedisClient('localhost');
+      Redis := NewRedisClient(REDIS_SERVER_ADDRESS);
       Redis.RPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
 
@@ -344,6 +403,100 @@ begin
   CheckEquals('1234', lRes);
   TThread.Sleep(1100);
   CheckFalse(FRedis.GET('daniele').HasValue);
+end;
+
+procedure TestRedisClient.TestGEODIST;
+var
+  lResp: TRedisString;
+  FS: TFormatSettings;
+begin
+  FS.DecimalSeparator := '.';
+  LoadGeoData;
+
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'milano', TRedisGeoUnit.Kilometers);
+  CheckTrue(lResp.HasValue);
+  CheckTrue(StrToFloat(lResp, FS) > 500);
+
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'milano', TRedisGeoUnit.Meters);
+  CheckTrue(lResp.HasValue);
+  CheckTrue(StrToFloat(lResp, FS) > 500 * 1000);
+
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'viterbo', TRedisGeoUnit.Kilometers);
+  CheckTrue(lResp.HasValue);
+  CheckTrue(StrToFloat(lResp, FS) < 100);
+
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'roma', TRedisGeoUnit.Kilometers);
+  CheckTrue(lResp.HasValue);
+  CheckTrue(StrToFloat(lResp, FS) = 0);
+
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'romakkk', 'kkkviterbo', TRedisGeoUnit.Kilometers);
+  CheckFalse(lResp.HasValue);
+end;
+
+procedure TestRedisClient.TestGEOHASH;
+var
+  lArrResp: TRedisArray;
+begin
+  lArrResp := FRedis.GEOHASH(KEY_GEODATA, ['roma', 'milano']);
+  CheckTrue(lArrResp.HasValue);
+  CheckEquals(2, lArrResp.Count);
+  CheckTrue(lArrResp.Items[0].HasValue);
+  CheckTrue(lArrResp.Items[1].HasValue);
+end;
+
+procedure TestRedisClient.TestGEOPOS;
+var
+  lMatrixResp: TRedisMatrix;
+begin
+  LoadGeoData;
+
+  lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['roma']);
+  CheckFalse(lMatrixResp.IsNull);
+  CheckFalse(lMatrixResp.Items[0].IsNull);
+  CheckEqualsString('41.90000206232070923', lMatrixResp.Items[0].Items[0]);
+  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[1]);
+
+  lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['roma', 'milano']);
+  CheckFalse(lMatrixResp.IsNull);
+  CheckFalse(lMatrixResp.Items[0].IsNull);
+  CheckFalse(lMatrixResp.Items[1].IsNull);
+
+  CheckEqualsString('41.90000206232070923', lMatrixResp.Items[0].Items[0]);
+  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[1]);
+
+  CheckEqualsString('45.46119779348373413', lMatrixResp.Items[1].Items[0]);
+  CheckEqualsString('9.1878002271457504', lMatrixResp.Items[1].Items[1]);
+end;
+
+procedure TestRedisClient.TestGEORADIUS;
+var
+  lArrResp: TRedisArray;
+const
+  RomaLat = 41.90000206232070923;
+  RomaLon = 12.48330019941216307;
+begin
+  { TODO -oDaniele -cGeneral : Implements all the GEORADIUS parameters which returns a TRedisArray }
+
+  LoadGeoData;
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers);
+  CheckTrue(lArrResp.HasValue);
+  CheckEquals(3, lArrResp.Count);
+  CheckFalse(lArrResp.Contains('milano'));
+  CheckTrue(lArrResp.Contains('ciampino'));
+  CheckTrue(lArrResp.Contains('roma'));
+  CheckTrue(lArrResp.Contains('fonte nuova'));
+  CheckFalse(lArrResp.Contains('napoli'));
+
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 100, TRedisGeoUnit.Kilometers);
+  CheckTrue(lArrResp.HasValue);
+  CheckFalse(lArrResp.Contains('milano'));
+  CheckTrue(lArrResp.Contains('ciampino'));
+  CheckTrue(lArrResp.Contains('roma'));
+  CheckTrue(lArrResp.Contains('fonte nuova'));
+  CheckFalse(lArrResp.Contains('napoli'));
+
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 0, TRedisGeoUnit.Meters);
+  CheckTrue(lArrResp.IsNull);
 end;
 
 procedure TestRedisClient.TestGETRANGE;
@@ -800,7 +953,7 @@ var
   lValue: string;
   lOtherClient: IRedisClient;
 begin
-  lOtherClient := NewRedisClient;
+  lOtherClient := NewRedisClient(REDIS_SERVER_ADDRESS);
   FRedis.&SET('mykey', '1234');
   FRedis.WATCH(['mykey']);
   lValue := FRedis.GET('mykey');
@@ -836,7 +989,7 @@ var
   lValue: string;
   lOtherClient: IRedisClient;
 begin
-  lOtherClient := NewRedisClient;
+  lOtherClient := NewRedisClient(REDIS_SERVER_ADDRESS);
   FRedis.&SET('mykey', '1234');
   FRedis.WATCH(['mykey']);
   lValue := FRedis.GET('mykey');
@@ -861,7 +1014,7 @@ var
   lValue: string;
   lOtherClient: IRedisClient;
 begin
-  lOtherClient := NewRedisClient;
+  lOtherClient := NewRedisClient(REDIS_SERVER_ADDRESS);
   FRedis.&SET('mykey', '1234');
   FRedis.WATCH(['mykey']);
   lValue := FRedis.GET('mykey');

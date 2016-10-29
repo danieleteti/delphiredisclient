@@ -33,6 +33,8 @@ type
 
   TRedisArray = TRedisNullable<TArray<TRedisString>>;
 
+  TRedisMatrix = TRedisNullable<TArray<TRedisArray>>;
+
 type
   TRedisStringHelper = record helper for TRedisString
   public
@@ -40,11 +42,25 @@ type
   end;
 
   TRedisArrayHelper = record helper for TRedisArray
+  private
+    function GetCount: UInt64;
   protected
-    function GetItems(const aIndex: UInt64): string;
+    function GetItems(const aIndex: UInt64): TRedisString;
   public
     function ToArray: TArray<string>;
-    property Items[const aIndex: UInt64]: string read GetItems;
+    function Contains(const Value: string): Boolean;
+    property Items[const aIndex: UInt64]: TRedisString read GetItems;
+    property Count: UInt64 read GetCount;
+  end;
+
+  TRedisMatrixHelper = record helper for TRedisMatrix
+  private
+    function GetCount: UInt64;
+  protected
+    function GetItems(const aIndex: UInt64): TRedisArray;
+  public
+    property Items[const aIndex: UInt64]: TRedisArray read GetItems;
+    property Count: UInt64 read GetCount;
   end;
 
 const
@@ -133,7 +149,24 @@ end;
 
 { TRedisArrayHelper }
 
-function TRedisArrayHelper.GetItems(const aIndex: UInt64): string;
+function TRedisArrayHelper.Contains(const Value: string): Boolean;
+var
+  lValue: string;
+begin
+  Result := False;
+  for lValue in Self.Value do
+  begin
+    if lValue = Value then
+      Exit(True);
+  end;
+end;
+
+function TRedisArrayHelper.GetCount: UInt64;
+begin
+  Result := Length(Value);
+end;
+
+function TRedisArrayHelper.GetItems(const aIndex: UInt64): TRedisString;
 begin
   Result := Value[aIndex];
 end;
@@ -161,6 +194,18 @@ begin
   if IsNull then
     Exit('(nil)');
   Result := Value;
+end;
+
+{ TRedisMatrixHelper }
+
+function TRedisMatrixHelper.GetCount: UInt64;
+begin
+  Result := Length(Value);
+end;
+
+function TRedisMatrixHelper.GetItems(const aIndex: UInt64): TRedisArray;
+begin
+  Result := FValue[aIndex];
 end;
 
 end.

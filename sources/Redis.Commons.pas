@@ -1,5 +1,7 @@
 unit Redis.Commons;
 
+{$SCOPEDENUMS ON}
+
 interface
 
 uses
@@ -29,6 +31,8 @@ type
     ERR_NOT_A_VALID_COMMAND = 'Not a valid Redis command';
   end;
 
+  TRedisGeoUnit = (Meters, Kilometers, Miles, Feet);
+
   TRedisClientBase = class abstract(TInterfacedObject)
   protected
     function BytesOfUnicode(const AUnicodeString: string): TBytes;
@@ -38,13 +42,17 @@ type
   IRedisCommand = interface;
   IRedisClient = interface;
 
-  TRedisTransactionProc = reference to procedure(const Redis: IRedisClient);
-  TRedisTimeoutCallback = reference to function: boolean;
+  TRedisTransactionProc = reference to
+    procedure(const Redis: IRedisClient);
+  TRedisTimeoutCallback = reference to
+    function: boolean;
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
 
-    function &SET(const aKey, aValue: string): boolean; overload;
+    function &SET(const aKey, aValue: string): boolean;
+      overload;
+
     function &SET(const aKey, aValue: TBytes): boolean; overload;
     function &SET(const aKey: string; aValue: TBytes): boolean; overload;
     function &SET(const aKey: string; aValue: TBytes; aSecsExpire: UInt64): boolean; overload;
@@ -66,20 +74,26 @@ type
     function KEYS(const AKeyPattern: string): TRedisArray;
     function INCR(const aKey: string): NativeInt;
     function DECR(const aKey: string): NativeInt;
-    function EXPIRE(const aKey: string; aExpireInSecond: UInt32): boolean;
+    function EXPIRE(const aKey: string;
+      aExpireInSecond: UInt32): boolean;
     function PERSIST(const aKey: string): boolean;
     function RANDOMKEY: TRedisString;
 
     // strings functions
-    function APPEND(const aKey, aValue: TBytes): UInt64; overload;
-    function APPEND(const aKey, aValue: string): UInt64; overload;
+    function APPEND(const aKey, aValue: TBytes)
+      : UInt64; overload;
+    function APPEND(const aKey, aValue: string)
+      : UInt64; overload;
     function STRLEN(const aKey: string): UInt64;
-    function GETRANGE(const aKey: string; const aStart, aEnd: NativeInt): string;
-    function SETRANGE(const aKey: string; const aOffset: NativeInt; const aValue: string)
+    function GETRANGE(const aKey: string;
+      const aStart, aEnd: NativeInt): string;
+    function SETRANGE(const aKey: string;
+      const aOffset: NativeInt; const aValue: string)
       : NativeInt;
 
     // hash
-    function HSET(const aKey, aField: string; aValue: string): Integer; overload;
+    function HSET(const aKey, aField: string; aValue: string)
+      : Integer; overload;
     procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>);
     function HSET(const aKey, aField: string; aValue: TBytes): Integer; overload;
     function HGET(const aKey, aField: string; out aValue: TBytes): boolean; overload;
@@ -104,13 +118,16 @@ type
     function RPOPLPUSH(const aRightListKey, aLeftListKey: string;
       var aPoppedAndPushedElement: string): boolean; overload;
     function BRPOPLPUSH(const aRightListKey, aLeftListKey: string;
-      var aPoppedAndPushedElement: string; aTimeout: Int32): boolean; overload;
-    function BLPOP(const aKeys: array of string; const aTimeout: Int32;
-      out Value: TArray<string>): boolean; overload; deprecated 'Use BLPOP: TRedisArray';
+      var aPoppedAndPushedElement: string; aTimeout: Int32)
+      : boolean; overload;
+    function BLPOP(const aKeys: array of string; const aTimeout: Int32; out Value: TArray<string>)
+      : boolean; overload;
+      deprecated 'Use BLPOP: TRedisArray';
     function BLPOP(const aKeys: array of string; const aTimeout: Int32): TRedisArray; overload;
     function BRPOP(const aKeys: array of string; const aTimeout: Int32;
       out Value: TArray<string>): boolean; overload; deprecated 'Use BRPOP: TRedisArray';
-    function BRPOP(const aKeys: array of string; const aTimeout: Int32): TRedisArray; overload;
+    function BRPOP(const aKeys: array of string;
+      const aTimeout: Int32): TRedisArray; overload;
     function LREM(const aListKey: string; const aCount: Integer;
       const aValue: string): Integer;
 
@@ -133,11 +150,43 @@ type
     function ZINCRBY(const aKey: string; const AIncrement: Int64; const AMember: string): string;
 
     // geo
-    // function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)
-    // : Integer;
+    /// <summary>
+    /// GEOADD (Redis 3.2+)
+    /// </summary>
+    function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string)
+      : Integer;
+    /// <summary>
+    /// GEODIST (Redis 3.2+)
+    /// </summary>
+    function GEODIST(const Key: string; const Member1, Member2: string;
+      const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters)
+      : TRedisString;
+
+    /// <summary>
+    /// GEOHASH (Redis 3.2+)
+    /// </summary>
+    function GEOHASH(const Key: string; const Members: array of string): TRedisArray;
+
+    /// <summary>
+    /// GEOPOS (Redis 3.2+)
+    /// </summary>
+    function GEOPOS(const Key: string; const Members: array of string): TRedisMatrix;
+
+    /// <summary>
+    /// GEORADIUS (Redis 3.2+)
+    /// </summary>
+    function GEORADIUS(const Key: string; const Longitude, Latitude: Extended; Radius: Extended;
+      const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisArray;
+
+    /// <summary>
+    /// GEORADIUS (Redis 3.2+)
+    /// </summary>
+    function GEORADIUS_WITHDIST(const Key: string; const Longitude, Latitude: Extended;
+      Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisMatrix;
 
     // lua scripts
-    function EVAL(const aScript: string; aKeys: array of string; aValues: array of string): Integer;
+    function EVAL(const aScript: string; aKeys: array of string;
+      aValues: array of string): Integer;
 
     // system
     procedure FLUSHDB;
@@ -146,25 +195,31 @@ type
     function MOVE(const aKey: string; const aDB: Byte): boolean;
 
     // raw execute
-    function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
+    function ExecuteAndGetArray(const RedisCommand
+      : IRedisCommand)
       : TRedisArray;
-    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
+    function ExecuteWithIntegerResult(const RedisCommand
+      : IRedisCommand)
       : Int64; overload;
-    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): TRedisString;
+    function ExecuteWithStringResult(const RedisCommand
+      : IRedisCommand): TRedisString;
     // pubsub
     procedure SUBSCRIBE(const aChannels: array of string;
       ACallback: TProc<string, string>;
       ATimeoutCallback: TRedisTimeoutCallback = nil);
-    function PUBLISH(const aChannel: string; aMessage: string): Integer;
+    function PUBLISH(const aChannel: string;
+      aMessage: string): Integer;
     // transactions
-    function MULTI(aRedisTansactionProc: TRedisTransactionProc): TRedisArray; overload;
+    function MULTI(aRedisTansactionProc: TRedisTransactionProc)
+      : TRedisArray; overload;
     procedure MULTI; overload;
     function EXEC: TRedisArray;
     procedure WATCH(const aKeys: array of string);
 
     procedure DISCARD;
     // non sys
-    function Tokenize(const aRedisCommand: string): TArray<string>;
+    function Tokenize(const aRedisCommand: string)
+      : TArray<string>;
     procedure Connect;
     procedure Disconnect;
     function InTransaction: boolean;
@@ -176,7 +231,7 @@ type
 
   IRedisCommand = interface
     ['{79C43B91-604F-49BC-8EB8-35F092258833}']
-    function GetToken(const Index: Integer): TBytes;
+    function GetToken(const index: Integer): TBytes;
     procedure Clear;
     function Count: Integer;
     function Add(ABytes: TBytes): IRedisCommand; overload;
@@ -195,7 +250,8 @@ type
     procedure WriteCrLf(const Bytes: TBytes);
     procedure SendCmd(const Values: IRedisCommand);
     function Receive(const Timeout: Int32): string;
-    function ReceiveBytes(const aCount: Int64; const Timeout: Int32)
+    function ReceiveBytes(const aCount: Int64;
+      const Timeout: Int32)
       : System.TArray<System.Byte>;
     procedure Disconnect;
     function LastReadWasTimedOut: boolean;
