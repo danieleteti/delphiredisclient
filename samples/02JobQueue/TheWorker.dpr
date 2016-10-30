@@ -18,7 +18,7 @@ uses
   System.Classes,
   System.Bindings.EvalProtocol,
   JobU in '..\Commons\JobU.pas',
-  RandomUtilsU in '..\Commons\RandomUtilsU.pas';
+  RandomUtilsU in '..\Commons\RandomUtilsU.pas', Redis.Values;
 
 function IValueToString(Value: IValue): string;
 var
@@ -59,13 +59,13 @@ end;
 procedure Main;
 var
   lRedis: IRedisClient;
-  lMsgs: TArray<string>;
   lQName: string;
-  lMsg: string;
   lJObj: TJSONObject;
   lEvalJob: TEvalJob;
   lResp: Extended;
   lJRespObj: TJSONObject;
+  lArrResp: TRedisArray;
+  lMsg: String;
 begin
   lRedis := TRedisClient.Create;
   lRedis.Connect;
@@ -73,11 +73,12 @@ begin
   begin
     Writeln(slinebreak + '>>WAITING FOR MESSAGES ON QUEUE "jobs"');
     // Wait for a message in the queue. Timeout 10 secs.
-    if lRedis.BRPOP(['jobs'], 10, lMsgs) then
+    lArrResp := lRedis.BRPOP(['jobs'], 10);
+    if lArrResp.HasValue then
     begin
       Writeln('** NEW MESSAGE **');
-      lQName := lMsgs[0];
-      lMsg := lMsgs[1];
+      lQName := lArrResp.Items[0];
+      lMsg := lArrResp.Items[1];
       lJObj := TJSONObject.ParseJSONValue(lMsg) as TJSONObject;
       try
         Writeln('Just got the message ', lJObj.ToString);

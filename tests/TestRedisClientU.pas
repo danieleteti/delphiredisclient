@@ -86,6 +86,9 @@ type
     procedure TestGEOPOS;
     procedure TestGEOHASH;
     procedure TestGEORADIUS;
+    procedure TestGEORADIUS_WithDist;
+    procedure TestGEORADIUS_Sorting;
+    procedure TestGEORADIUS_Count;
   end;
 
 implementation
@@ -475,8 +478,6 @@ const
   RomaLat = 41.90000206232070923;
   RomaLon = 12.48330019941216307;
 begin
-  { TODO -oDaniele -cGeneral : Implements all the GEORADIUS parameters which returns a TRedisArray }
-
   LoadGeoData;
   lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers);
   CheckTrue(lArrResp.HasValue);
@@ -497,6 +498,90 @@ begin
 
   lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 0, TRedisGeoUnit.Meters);
   CheckTrue(lArrResp.IsNull);
+end;
+
+procedure TestRedisClient.TestGEORADIUS_Count;
+var
+  lArrResp: TRedisArray;
+const
+  RomaLat = 41.90000206232070923;
+  RomaLon = 12.48330019941216307;
+begin
+  LoadGeoData;
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
+    TRedisSorting.Asc, 10);
+  CheckTrue(lArrResp.HasValue);
+  CheckEquals(3, lArrResp.Count);
+  CheckEquals('roma', lArrResp.Items[0]);
+  CheckEquals('ciampino', lArrResp.Items[1]);
+  CheckEquals('fonte nuova', lArrResp.Items[2]);
+
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
+    TRedisSorting.Asc, 2);
+  CheckTrue(lArrResp.HasValue);
+  CheckEquals(2, lArrResp.Count);
+  CheckEquals('roma', lArrResp.Items[0]);
+  CheckEquals('ciampino', lArrResp.Items[1]);
+end;
+
+procedure TestRedisClient.TestGEORADIUS_Sorting;
+var
+  lArrResp: TRedisArray;
+const
+  RomaLat = 41.90000206232070923;
+  RomaLon = 12.48330019941216307;
+begin
+  LoadGeoData;
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
+    TRedisSorting.Asc);
+  CheckTrue(lArrResp.HasValue);
+  CheckEquals(3, lArrResp.Count);
+  CheckEquals('roma', lArrResp.Items[0]);
+  CheckEquals('ciampino', lArrResp.Items[1]);
+  CheckEquals('fonte nuova', lArrResp.Items[2]);
+
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
+    TRedisSorting.Desc);
+  CheckTrue(lArrResp.HasValue);
+  CheckEquals(3, lArrResp.Count);
+  CheckEquals('roma', lArrResp.Items[2]);
+  CheckEquals('ciampino', lArrResp.Items[1]);
+  CheckEquals('fonte nuova', lArrResp.Items[0]);
+end;
+
+procedure TestRedisClient.TestGEORADIUS_WithDist;
+var
+  lMatrixResp: TRedisMatrix;
+const
+  RomaLat = 41.90000206232070923;
+  RomaLon = 12.48330019941216307;
+begin
+  LoadGeoData;
+  lMatrixResp := FRedis.GEORADIUS_WITHDIST(KEY_GEODATA, RomaLon, RomaLat, 20,
+    TRedisGeoUnit.Kilometers, TRedisSorting.Asc);
+  CheckTrue(lMatrixResp.HasValue);
+  CheckEquals(3, lMatrixResp.Count);
+
+  CheckEquals(2, lMatrixResp.Items[0].Count);
+  CheckEquals(2, lMatrixResp.Items[1].Count);
+  CheckEquals(2, lMatrixResp.Items[2].Count);
+
+  CheckEquals('roma', lMatrixResp.Items[0].Items[0]);
+  CheckEquals('ciampino', lMatrixResp.Items[1].Items[0]);
+  CheckEquals('fonte nuova', lMatrixResp.Items[2].Items[0]);
+
+  CheckEquals('0.0000', lMatrixResp.Items[0].Items[1]);
+
+  // lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 100, TRedisGeoUnit.Kilometers);
+  // CheckTrue(lArrResp.HasValue);
+  // CheckFalse(lArrResp.Contains('milano'));
+  // CheckTrue(lArrResp.Contains('ciampino'));
+  // CheckTrue(lArrResp.Contains('roma'));
+  // CheckTrue(lArrResp.Contains('fonte nuova'));
+  // CheckFalse(lArrResp.Contains('napoli'));
+  //
+  // lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 0, TRedisGeoUnit.Meters);
+  // CheckTrue(lArrResp.IsNull);
 end;
 
 procedure TestRedisClient.TestGETRANGE;

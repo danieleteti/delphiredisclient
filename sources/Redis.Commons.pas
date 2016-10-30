@@ -32,6 +32,7 @@ type
   end;
 
   TRedisGeoUnit = (Meters, Kilometers, Miles, Feet);
+  TRedisSorting = (None, Asc, Desc);
 
   TRedisClientBase = class abstract(TInterfacedObject)
   protected
@@ -175,14 +176,17 @@ type
     /// <summary>
     /// GEORADIUS (Redis 3.2+)
     /// </summary>
-    function GEORADIUS(const Key: string; const Longitude, Latitude: Extended; Radius: Extended;
-      const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisArray;
+    function GEORADIUS(const Key: string; const Longitude, Latitude: Extended;
+      const Radius: Extended;
+      const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
+      const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisArray;
 
     /// <summary>
     /// GEORADIUS (Redis 3.2+)
     /// </summary>
     function GEORADIUS_WITHDIST(const Key: string; const Longitude, Latitude: Extended;
-      Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisMatrix;
+      const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
+      const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisMatrix;
 
     // lua scripts
     function EVAL(const aScript: string; aKeys: array of string;

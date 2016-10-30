@@ -32,6 +32,10 @@ type
     function ParseSimpleStringResponseAsByteNULL: TRedisBytes;
     function ParseSimpleStringResponseAsStringNULL: TRedisString;
   protected
+    function GetGEORADIUSCommand(const Key: string; const Longitude, Latitude: Extended;
+      const Radius: Extended; const &Unit: TRedisGeoUnit;
+      const Sorting: TRedisSorting; const Count: Int64): IRedisCommand;
+
     function POPCommands(const aCommand: string; const aListKey: string): TRedisString;
     procedure CheckResponseError(const aResponse: string);
     function GetCmdList(const Cmd: string): IRedisCommand;
@@ -155,10 +159,12 @@ type
       : TRedisString;
     function GEOHASH(const Key: string; const Members: array of string): TRedisArray;
     function GEOPOS(const Key: string; const Members: array of string): TRedisMatrix;
-    function GEORADIUS(const Key: string; const Longitude, Latitude: Extended; Radius: Extended;
-      const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisArray;
+    function GEORADIUS(const Key: string; const Longitude, Latitude: Extended;
+      const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
+      const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisArray;
     function GEORADIUS_WITHDIST(const Key: string; const Longitude, Latitude: Extended;
-      Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters): TRedisMatrix;
+      const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
+      const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisMatrix;
 
     // lua scripts
     function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
@@ -533,6 +539,30 @@ begin
   FRedisCmdParts.Clear;
   Result := FRedisCmdParts;
   Result.SetCommand(Cmd);
+end;
+
+function TRedisClient.GetGEORADIUSCommand(const Key: string; const Longitude,
+  Latitude, Radius: Extended; const &Unit: TRedisGeoUnit;
+  const Sorting: TRedisSorting; const Count: Int64): IRedisCommand;
+var
+  lCmd: IRedisCommand;
+begin
+  lCmd := NewRedisCommand('GEORADIUS');
+  lCmd.Add(Key);
+  lCmd.Add(FormatFloat('0.0000000', Latitude));
+  lCmd.Add(FormatFloat('0.0000000', Longitude));
+  lCmd.Add(FormatFloat('0.0000000', Radius));
+  lCmd.Add(REDIS_GEO_UNIT_STRING[&Unit]);
+  if Count > -1 then
+    lCmd.Add('COUNT').Add(Count);
+
+  case Sorting of
+    TRedisSorting.Asc:
+      lCmd.Add('ASC');
+    TRedisSorting.Desc:
+      lCmd.Add('DESC');
+  end;
+  Result := lCmd;
 end;
 
 function TRedisClient.GETRANGE(const aKey: string; const AStart,
@@ -1544,8 +1574,7 @@ begin
   Result := ExecuteAndGetArrayNULL(lCmd);
 end;
 
-function TRedisClient.GEOPOS(const Key: string;
-  const Members: array of string): TRedisMatrix;
+function TRedisClient.GEOPOS(const Key: string; const Members: array of string): TRedisMatrix;
 var
   lCmd: IRedisCommand;
   lMember: string;
@@ -1559,27 +1588,25 @@ begin
   Result := ExecuteAndGetMatrix(lCmd);
 end;
 
-function TRedisClient.GEORADIUS(const Key: string; const Longitude,
-  Latitude: Extended; Radius: Extended;
-  const &Unit: TRedisGeoUnit): TRedisArray;
+function TRedisClient.GEORADIUS(const Key: string; const Longitude, Latitude: Extended;
+  const Radius: Extended;
+  const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting; const Count: Int64): TRedisArray;
 var
   lCmd: IRedisCommand;
-  lMember: string;
 begin
-  lCmd := NewRedisCommand('GEORADIUS');
-  lCmd.Add(Key);
-  lCmd.Add(FormatFloat('0.0000000', Latitude));
-  lCmd.Add(FormatFloat('0.0000000', Longitude));
-  lCmd.Add(FormatFloat('0.0000000', Radius));
-  lCmd.Add(REDIS_GEO_UNIT_STRING[&Unit]);
+  lCmd := GetGEORADIUSCommand(Key, Longitude, Latitude, Radius, &Unit, Sorting, Count);
   Result := ExecuteAndGetArrayNULL(lCmd);
 end;
 
-function TRedisClient.GEORADIUS_WITHDIST(const Key: string; const Longitude,
-  Latitude: Extended; Radius: Extended;
-  const &Unit: TRedisGeoUnit): TRedisMatrix;
+function TRedisClient.GEORADIUS_WITHDIST(const Key: string; const Longitude, Latitude: Extended;
+  const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
+  const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisMatrix;
+var
+  lCmd: IRedisCommand;
 begin
-
+  lCmd := GetGEORADIUSCommand(Key, Longitude, Latitude, Radius, &Unit, Sorting, Count);
+  lCmd.Add('WITHDIST');
+  Result := ExecuteAndGetMatrix(lCmd);
 end;
 
 function TRedisClient.GET(const aKey: string; out aValue: TBytes): boolean;
