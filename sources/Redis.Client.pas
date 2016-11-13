@@ -1,3 +1,27 @@
+// *************************************************************************** }
+//
+// Delphi REDIS Client
+//
+// Copyright (c) 2015-2016 Daniele Teti
+//
+// https://github.com/danieleteti/delphiredisclient
+//
+// ***************************************************************************
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// ***************************************************************************
+
 unit Redis.Client;
 
 interface
@@ -101,7 +125,8 @@ type
       overload;
     function HSET(const aKey, aField: string; aValue: TBytes): Integer;
       overload;
-    procedure HMSET(const aKey: string; aFields: TArray<string>; AValues: TArray<string>);
+    procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>); overload;
+    procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>); overload;
     function HMGET(const aKey: string; aFields: TArray<string>): TRedisArray;
     function HGET(const aKey, aField: string; out aValue: TBytes)
       : boolean; overload;
@@ -109,11 +134,11 @@ type
       : boolean; overload;
     function HDEL(const aKey: string; aFields: TArray<string>): Integer;
     // lists
-    function RPUSH(const aListKey: string; AValues: array of string): Integer;
-    function RPUSHX(const aListKey: string; AValues: array of string): Integer;
+    function RPUSH(const aListKey: string; aValues: array of string): Integer;
+    function RPUSHX(const aListKey: string; aValues: array of string): Integer;
     function RPOP(const aListKey: string; var Value: string): boolean; overload;
-    function LPUSH(const aListKey: string; AValues: array of string): Integer;
-    function LPUSHX(const aListKey: string; AValues: array of string): Integer;
+    function LPUSH(const aListKey: string; aValues: array of string): Integer;
+    function LPUSHX(const aListKey: string; aValues: array of string): Integer;
     function LPOP(const aListKey: string; out Value: string): boolean; overload;
     function LRANGE(const aListKey: string; aIndexStart, aIndexStop: Integer): TRedisArray;
     function LLEN(const aListKey: string): Integer;
@@ -167,7 +192,7 @@ type
       const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisMatrix;
 
     // lua scripts
-    function EVAL(const AScript: string; AKeys: array of string; AValues: array of string): Integer;
+    function EVAL(const AScript: string; AKeys: array of string; aValues: array of string): Integer;
     // system
     procedure FLUSHDB;
     procedure FLUSHALL;
@@ -430,7 +455,7 @@ begin
 end;
 
 function TRedisClient.EVAL(const AScript: string; AKeys,
-  AValues: array of string): Integer;
+  aValues: array of string): Integer;
 var
   lCmd: IRedisCommand;
   lParamsCount: Integer;
@@ -446,7 +471,7 @@ begin
     begin
       lCmd.Add(lPar);
     end;
-    for lPar in AValues do
+    for lPar in aValues do
     begin
       lCmd.Add(lPar);
     end;
@@ -660,11 +685,11 @@ begin
   Result := ParseArrayResponseNULL;
 end;
 
-procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>; AValues: TArray<string>);
+procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>);
 var
   I: Integer;
 begin
-  if Length(aFields) <> Length(AValues) then
+  if Length(aFields) <> Length(aValues) then
     raise ERedisException.Create('Fields count and values count are different');
 
   FNextCMD := GetCmdList('HMSET');
@@ -672,7 +697,28 @@ begin
   for I := low(aFields) to high(aFields) do
   begin
     FNextCMD.Add(aFields[I]);
-    FNextCMD.Add(AValues[I]);
+    FNextCMD.Add(aValues[I]);
+  end;
+  FTCPLibInstance.SendCmd(FNextCMD);
+  if FInTransaction then
+    CheckResponseType('QUEUED', ParseSimpleStringResponseAsStringNULL.Value)
+  else
+    CheckResponseType('OK', ParseSimpleStringResponseAsStringNULL.Value);
+end;
+
+procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>);
+var
+  I: Integer;
+begin
+   if Length(aFields) <> Length(aValues) then
+    raise ERedisException.Create('Fields count and values count are different');
+
+  FNextCMD := GetCmdList('HMSET');
+  FNextCMD.Add(aKey);
+  for I := low(aFields) to high(aFields) do
+  begin
+    FNextCMD.Add(aFields[I]);
+    FNextCMD.Add(aValues[I]);
   end;
   FTCPLibInstance.SendCmd(FNextCMD);
   if FInTransaction then
@@ -751,21 +797,21 @@ begin
 end;
 
 function TRedisClient.LPUSH(const aListKey: string;
-  AValues: array of string): Integer;
+  aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('LPUSH');
   FNextCMD.Add(aListKey);
-  FNextCMD.AddRange(AValues);
+  FNextCMD.AddRange(aValues);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
 function TRedisClient.LPUSHX(const aListKey: string;
-  AValues: array of string): Integer;
+  aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('LPUSHX');
   FNextCMD.Add(aListKey);
-  FNextCMD.AddRange(AValues);
+  FNextCMD.AddRange(aValues);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
@@ -1201,21 +1247,21 @@ begin
 end;
 
 function TRedisClient.RPUSH(const aListKey: string;
-  AValues: array of string): Integer;
+  aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('RPUSH');
   FNextCMD.Add(aListKey);
-  FNextCMD.AddRange(AValues);
+  FNextCMD.AddRange(aValues);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
 function TRedisClient.RPUSHX(const aListKey: string;
-  AValues: array of string): Integer;
+  aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('RPUSHX');
   FNextCMD.Add(aListKey);
-  FNextCMD.AddRange(AValues);
+  FNextCMD.AddRange(aValues);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
