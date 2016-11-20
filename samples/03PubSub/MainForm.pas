@@ -66,7 +66,7 @@ begin
     'What is your user name in this chat?', 'd.teti' + (100 + Random(999))
     .ToString);
   _redis := NewRedisClient();
-  FTask := TTask.Create(
+  FTask := TTask.Run(
     procedure
     var
       r: IRedisClient;
@@ -91,7 +91,7 @@ begin
         begin
           Result := Assigned(Self) and (not FClosing);
         end);
-    end).Start;
+    end);
 end;
 
 procedure TForm2.OnMessage(const ANickName, AMessage: string);

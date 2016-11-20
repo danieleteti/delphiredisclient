@@ -22,7 +22,6 @@
 //
 // ***************************************************************************
 
-
 unit TestRedisClientU;
 {
 
@@ -99,7 +98,7 @@ type
     procedure TestWATCH_MULTI_EXEC_Fail;
     procedure TestWATCH_OK;
     procedure TestWATCH_Fail;
-    // procedure TestSUBSCRIBE;
+    procedure TestSUBSCRIBE;
     procedure TestGET_NULLABLE;
     procedure TestHSetHGet_NULLABLE;
     procedure TestLPOP_RPOP_NULLABLE;
@@ -119,7 +118,7 @@ type
 implementation
 
 uses System.rtti, System.Generics.Collections,
-  System.Generics.Defaults;
+  System.Generics.Defaults, System.SyncObjs;
 
 procedure TestRedisClient.LoadGeoData;
 var
@@ -138,8 +137,7 @@ begin
     Exit;
 
   lReader := TStreamReader.Create(TFileStream.Create('ITALIANCITIES.TXT',
-    fmOpenRead,
-    fmShareExclusive), TEncoding.UTF8);
+    fmOpenRead, fmShareExclusive), TEncoding.UTF8);
   try
     lReader.OwnStream;
     lLine := lReader.ReadLine; // headers
@@ -441,7 +439,8 @@ begin
   FS.DecimalSeparator := '.';
   LoadGeoData;
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'milano', TRedisGeoUnit.Kilometers);
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'milano',
+    TRedisGeoUnit.Kilometers);
   CheckTrue(lResp.HasValue);
   CheckTrue(StrToFloat(lResp, FS) > 500);
 
@@ -449,15 +448,18 @@ begin
   CheckTrue(lResp.HasValue);
   CheckTrue(StrToFloat(lResp, FS) > 500 * 1000);
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'viterbo', TRedisGeoUnit.Kilometers);
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'viterbo',
+    TRedisGeoUnit.Kilometers);
   CheckTrue(lResp.HasValue);
   CheckTrue(StrToFloat(lResp, FS) < 100);
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'roma', TRedisGeoUnit.Kilometers);
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'roma',
+    TRedisGeoUnit.Kilometers);
   CheckTrue(lResp.HasValue);
   CheckTrue(StrToFloat(lResp, FS) = 0);
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'romakkk', 'kkkviterbo', TRedisGeoUnit.Kilometers);
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'romakkk', 'kkkviterbo',
+    TRedisGeoUnit.Kilometers);
   CheckFalse(lResp.HasValue);
 end;
 
@@ -504,7 +506,8 @@ const
   RomaLon = 12.48330019941216307;
 begin
   LoadGeoData;
-  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers);
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20,
+    TRedisGeoUnit.Kilometers);
   CheckTrue(lArrResp.HasValue);
   CheckEquals(3, lArrResp.Count);
   CheckFalse(lArrResp.Contains('milano'));
@@ -513,7 +516,8 @@ begin
   CheckTrue(lArrResp.Contains('fonte nuova'));
   CheckFalse(lArrResp.Contains('napoli'));
 
-  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 100, TRedisGeoUnit.Kilometers);
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 100,
+    TRedisGeoUnit.Kilometers);
   CheckTrue(lArrResp.HasValue);
   CheckFalse(lArrResp.Contains('milano'));
   CheckTrue(lArrResp.Contains('ciampino'));
@@ -521,7 +525,8 @@ begin
   CheckTrue(lArrResp.Contains('fonte nuova'));
   CheckFalse(lArrResp.Contains('napoli'));
 
-  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 0, TRedisGeoUnit.Meters);
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 0,
+    TRedisGeoUnit.Meters);
   CheckTrue(lArrResp.IsNull);
 end;
 
@@ -533,16 +538,16 @@ const
   RomaLon = 12.48330019941216307;
 begin
   LoadGeoData;
-  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
-    TRedisSorting.Asc, 10);
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20,
+    TRedisGeoUnit.Kilometers, TRedisSorting.Asc, 10);
   CheckTrue(lArrResp.HasValue);
   CheckEquals(3, lArrResp.Count);
   CheckEquals('roma', lArrResp.Items[0]);
   CheckEquals('ciampino', lArrResp.Items[1]);
   CheckEquals('fonte nuova', lArrResp.Items[2]);
 
-  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
-    TRedisSorting.Asc, 2);
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20,
+    TRedisGeoUnit.Kilometers, TRedisSorting.Asc, 2);
   CheckTrue(lArrResp.HasValue);
   CheckEquals(2, lArrResp.Count);
   CheckEquals('roma', lArrResp.Items[0]);
@@ -557,16 +562,16 @@ const
   RomaLon = 12.48330019941216307;
 begin
   LoadGeoData;
-  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
-    TRedisSorting.Asc);
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20,
+    TRedisGeoUnit.Kilometers, TRedisSorting.Asc);
   CheckTrue(lArrResp.HasValue);
   CheckEquals(3, lArrResp.Count);
   CheckEquals('roma', lArrResp.Items[0]);
   CheckEquals('ciampino', lArrResp.Items[1]);
   CheckEquals('fonte nuova', lArrResp.Items[2]);
 
-  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20, TRedisGeoUnit.Kilometers,
-    TRedisSorting.Desc);
+  lArrResp := FRedis.GEORADIUS(KEY_GEODATA, RomaLon, RomaLat, 20,
+    TRedisGeoUnit.Kilometers, TRedisSorting.Desc);
   CheckTrue(lArrResp.HasValue);
   CheckEquals(3, lArrResp.Count);
   CheckEquals('roma', lArrResp.Items[2]);
@@ -644,7 +649,8 @@ begin
   FRedis.HSET('abc', 'Address', '');
   FRedis.HSET('abc', 'Postcode', '12345');
   // there was an access violation here
-  Values := FRedis.HMGET('abc', ['Name', 'Address', 'Postcode', 'notvalid', 'Postcode']);
+  Values := FRedis.HMGET('abc', ['Name', 'Address', 'Postcode', 'notvalid',
+    'Postcode']);
   CheckTrue(Values.HasValue);
   CheckTrue(Values.Value[0].HasValue);
   CheckEquals('Daniele Teti', Values.Value[0]);
@@ -1168,32 +1174,99 @@ begin
 
 end;
 
-// procedure TestRedisClient.TestSUBSCRIBE;
-// var
-// Rcv: NativeInt;
-// MSG: string;
-// X: NativeInt;
-// begin
-// //not implemented
-// {
-// AtomicExchange(Rcv, 0);
-// // It's used for immediate real-time messaging, not for history storage
-// FRedis.SUBSCRIBE(['ch1', 'ch2'],
-// procedure(Channel, Message: string)
-// begin
-// MSG := message;
-// AtomicIncrement(Rcv, 1);
-// end);
-// }
-// {
-// while true do
-// begin
-// X := AtomicCmpExchange(Rcv, -1, -1);
-// TThread.Sleep(100)
-// end;
-// CheckEquals('hello', MSG);
-// }
-// end;
+procedure TestRedisClient.TestSUBSCRIBE;
+var
+  Rcv: Int64;
+  MSG: string;
+  lTerminated: Boolean;
+  lValue: Int64;
+  lThread: TThread;
+  lEvent: TEvent;
+  I: Integer;
+  lStart: Extended;
+const
+  MSG_COUNT = 100;
+begin
+  lEvent := TEvent.Create;
+  try
+    lEvent.ResetEvent;
+
+    TInterlocked.Exchange(Rcv, 0);
+    lTerminated := False;
+    lThread := TThread.CreateAnonymousThread(
+      procedure
+      var
+        lRedis: IRedisClient;
+      begin
+        lRedis := FRedis.Clone;
+        // It's used for immediate real-time messaging, not for history storage
+        lRedis.SUBSCRIBE(['ch1', 'ch2'],
+          procedure(Channel, Message: string)
+          begin
+            MSG := message;
+            TInterlocked.Increment(Rcv);
+          end,
+          function: Boolean
+          begin
+            Result := not lTerminated;
+          end,
+          procedure
+          begin
+            lEvent.SetEvent;
+          end);
+
+      end);
+    lThread.Start;
+
+    lEvent.WaitFor(INFINITE); // wait for actual SUBSCRIBING...
+    lEvent.ResetEvent;
+
+    { publish the event to REDIS pub/sub }
+    for I := 1 to MSG_COUNT do
+    begin
+      FRedis.PUBLISH('ch1', 'hello world 1.' + I.ToString);
+      FRedis.PUBLISH('ch2', 'hello world 2.' + I.ToString);
+    end;
+
+    { Wait until all the messages are actually processed by the SUBSCRIBED client... }
+    repeat
+      lValue := TInterlocked.Read(Rcv);
+      if ElapsedTestTime > 1000 then
+        fail('Test took too long (waiting messages)');
+    until lValue = MSG_COUNT * 2;
+
+    { Cleanup }
+    lTerminated := True;
+    while WaitForSingleObject(lThread.Handle, 100) = WAIT_TIMEOUT do
+    begin
+      Sleep(100);
+      if ElapsedTestTime > 2000 then
+        fail('Test took too long (shuthdown thread)');
+    end;
+  finally
+    lEvent.Free;
+  end;
+
+  // not implemented
+  {
+    AtomicExchange(Rcv, 0);
+    // It's used for immediate real-time messaging, not for history storage
+    FRedis.SUBSCRIBE(['ch1', 'ch2'],
+    procedure(Channel, Message: string)
+    begin
+    MSG := message;
+    AtomicIncrement(Rcv, 1);
+    end);
+  }
+  {
+    while true do
+    begin
+    X := AtomicCmpExchange(Rcv, -1, -1);
+    TThread.Sleep(100)
+    end;
+    CheckEquals('hello', MSG);
+  }
+end;
 
 initialization
 
