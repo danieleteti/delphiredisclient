@@ -1,9 +1,8 @@
-program CmdsSample1;
+program CmdsSample;
 
 {$APPTYPE CONSOLE}
 
 {$R *.res}
-
 
 uses
   System.SysUtils,
