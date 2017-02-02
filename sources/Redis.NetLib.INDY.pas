@@ -97,8 +97,13 @@ end;
 
 function TRedisTCPLibINDY.Receive(const Timeout: Int32): string;
 begin
+{$IF CompilerVersion < 24}
+  Result := FTCPClient.IOHandler.ReadLn(LF, Timeout, -1,
+    TIdTextEncoding.Default);
+{$ELSE}
   Result := FTCPClient.IOHandler.ReadLn(LF, Timeout, -1,
     IndyTextEncoding_Default);
+{$IFEND}
 end;
 
 function TRedisTCPLibINDY.ReceiveBytes(const ACount: Int64;
