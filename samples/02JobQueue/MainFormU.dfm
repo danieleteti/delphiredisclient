@@ -24,7 +24,7 @@ object MainForm: TMainForm
     Height = 27
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
-    Text = '3+2'
+    Text = '3+2-4/2*5+10'
   end
   object Button1: TButton
     Left = 431
@@ -43,7 +43,6 @@ object MainForm: TMainForm
     Height = 321
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 2
-    ExplicitHeight = 234
   end
   object Timer1: TTimer
     Enabled = False

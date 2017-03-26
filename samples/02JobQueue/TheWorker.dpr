@@ -1,3 +1,27 @@
+// *************************************************************************** }
+//
+// Delphi REDIS Client
+//
+// Copyright (c) 2015-2017 Daniele Teti
+//
+// https://github.com/danieleteti/delphiredisclient
+//
+// ***************************************************************************
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// ***************************************************************************
+
 program TheWorker;
 
 {$APPTYPE CONSOLE}
@@ -8,17 +32,17 @@ uses
   System.SysUtils,
   Rest.json,
   System.json,
-  {These are the required units for delphiredisclient}
   Redis.Client,
   Redis.netlib.INDY,
   Redis.Commons,
-  {///}
   System.Bindings.ExpressionDefaults,
   System.Bindings.Expression,
   System.Classes,
   System.Bindings.EvalProtocol,
   JobU in '..\Commons\JobU.pas',
-  RandomUtilsU in '..\Commons\RandomUtilsU.pas', Redis.Values;
+  RandomUtilsU in '..\Commons\RandomUtilsU.pas',
+  Redis.Values,
+  ConstantsU in '..\Commons\ConstantsU.pas';
 
 function IValueToString(Value: IValue): string;
 var
@@ -45,7 +69,7 @@ function GetExpressionResult(EvalJob: TEvalJob): Extended;
 var
   lExpr: TBindingExpression;
 begin
-  TThread.Sleep(5000); // just to mimic some work load
+  TThread.Sleep(4000); // just to mimic some work load
   lExpr := TBindingExpressionDefault.Create;
   try
     lExpr.Source := EvalJob.Expression;
@@ -67,7 +91,7 @@ var
   lArrResp: TRedisArray;
   lMsg: String;
 begin
-  lRedis := TRedisClient.Create;
+  lRedis := TRedisClient.Create(REDIS_HOSTNAME);
   lRedis.Connect;
   while true do
   begin

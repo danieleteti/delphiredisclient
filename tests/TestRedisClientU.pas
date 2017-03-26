@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2016 Daniele Teti
+// Copyright (c) 2015-2017 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -42,7 +42,7 @@ uses
   Redis.Client, Redis.Commons, Redis.Values;
 
 const
-  REDIS_SERVER_ADDRESS = '192.168.99.100';
+  REDIS_SERVER_ADDRESS = '192.168.1.102';
   KEY_GEODATA = 'geodata';
   // REDIS_SERVER_ADDRESS = '127.0.0.1';
 

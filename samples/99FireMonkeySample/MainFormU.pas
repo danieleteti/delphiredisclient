@@ -3,13 +3,15 @@ unit MainFormU;
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  System.SysUtils, System.Types, System.UITypes, System.Classes,
+  System.Variants,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Controls.Presentation,
   Redis.Commons, // Interfaces and types
   Redis.Client, // The client itself
   Redis.NetLib.INDY, // The tcp library used
-  Redis.Values, FMX.Edit, FMX.Layouts, FMX.ListBox; // nullable types for redis commands
+  Redis.Values, FMX.Edit, FMX.Layouts, FMX.ListBox;
+// nullable types for redis commands
 
 type
   TMainForm = class(TForm)
@@ -32,13 +34,14 @@ implementation
 
 {$R *.fmx}
 
+uses ConstantsU;
 
 procedure TMainForm.Button1Click(Sender: TObject);
 var
   lRedis: IRedisClient;
   lValue: TRedisString;
 begin
-  lRedis := TRedisClient.Create('192.168.1.109', 6379);
+  lRedis := TRedisClient.Create(REDIS_HOSTNAME, 6379);
   lRedis.Connect;
   lRedis.&SET('firstname', 'Daniele');
   lValue := lRedis.GET('firstname');

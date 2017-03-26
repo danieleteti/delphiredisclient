@@ -62,7 +62,7 @@ def main(projects):
 def copyright():
   print(Style.BRIGHT + Fore.WHITE + "----------------------------------------------------------------------------------------")	
   print(Fore.RED +   "                   ** Delphi Redis client Building System **")
-  print(Fore.WHITE + "          Delphi Redis Client is CopyRight (2014-2016) of Daniele Teti")
+  print(Fore.WHITE + "          Delphi Redis Client is CopyRight (2014-2017) of Daniele Teti")
   print(Fore.WHITE + "  Commercial support provided by bit Time Professionals - www.bittimeprofessionals.it")
   print(Fore.RESET + "----------------------------------------------------------------------------------------\n")
 

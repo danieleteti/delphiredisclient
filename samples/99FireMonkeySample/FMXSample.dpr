@@ -3,7 +3,8 @@ program FMXSample;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  MainFormU in 'MainFormU.pas' {MainForm};
+  MainFormU in 'MainFormU.pas' {MainForm},
+  ConstantsU in '..\Commons\ConstantsU.pas';
 
 {$R *.res}
 

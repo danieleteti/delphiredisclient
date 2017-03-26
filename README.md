@@ -1,8 +1,10 @@
 ![](https://github.com/danieleteti/delphiredisclient/blob/master/docs/redisclientlogo.png)
 =================
-Delphi Redis Client is compatible with Delphi 10.1 Berlin, Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions).
+Delphi Redis Client is compatible with Delphi 10.2 Tokyo, Delphi 10.1 Berlin, Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions).
 
-Delphi Redis Client is able to send all Redis commands and read the response using an internal parser. Moreover, many popular commands have a specialized dedicated metho which simplifies utilization.
+Delphi REDIS Client works on mobile since the first version (or so) and since Delphi 10.2 Tokyo it works on Linux too (tested Ubuntu 16.x LTS).
+
+Delphi Redis Client is able to send all Redis commands and read the response using an internal parser. Moreover, many popular commands have a specialized dedicated methods which simplifies utilization.
 
 This is the Redis Client interface used to connect, send commands and manager the Redis server. Many methods are 1-1 mapping to the Redis command with the same name (eg. SET is a map to the Redis SET command). Hi level methods implementing some integration design pattern are planned (e.g. Push a JSONObject, Pop a Stream and so on).
 
