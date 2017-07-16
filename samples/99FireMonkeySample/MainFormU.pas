@@ -1,3 +1,27 @@
+// *************************************************************************** }
+//
+// Delphi REDIS Client
+//
+// Copyright (c) 2015-2017 Daniele Teti
+//
+// https://github.com/danieleteti/delphiredisclient
+//
+// ***************************************************************************
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// ***************************************************************************
+
 unit MainFormU;
 
 interface
@@ -7,11 +31,11 @@ uses
   System.Variants,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Controls.Presentation,
+  FMX.Edit, FMX.Layouts, FMX.ListBox,
   Redis.Commons, // Interfaces and types
   Redis.Client, // The client itself
   Redis.NetLib.INDY, // The tcp library used
-  Redis.Values, FMX.Edit, FMX.Layouts, FMX.ListBox;
-// nullable types for redis commands
+  Redis.Values; // nullable types for redis commands
 
 type
   TMainForm = class(TForm)
