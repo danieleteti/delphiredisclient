@@ -1,6 +1,8 @@
 ![](https://github.com/danieleteti/delphiredisclient/blob/master/docs/redisclientlogo.png)
 =================
-Delphi Redis Client is compatible with Delphi 10.2 Tokyo, Delphi 10.1 Berlin, Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions).
+Delphi Redis Client version 2 (this branch) is compatible with Delphi 10.1 Berlin and better.
+WARNING!
+If you use an older Delphi version you have to use [Delphi Redis Client Version 1](https://github.com/danieleteti/delphiredisclient/tree/DELPHI_REDIS_CLIENT_VERSION_1) wich works for Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions).
 
 Delphi REDIS Client works on mobile since the first version (or so) and since Delphi 10.2 Tokyo it works on Linux too (tested Ubuntu 16.x LTS).
 
