@@ -1,6 +1,7 @@
 ![](https://github.com/danieleteti/delphiredisclient/blob/master/docs/redisclientlogo.png)
 =================
-Delphi Redis Client is compatible with Delphi 10.1 Berlin, Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions).
+Delphi Redis Client VERSION 1 (this branch) is compatible with Delphi 10.1 Berlin, Delphi 10 Seattle, XE8, XE7, XE6 and XE5 (should works also with older versions).
+If you use Delphi 10.1 Berlin or better, you should consider to use the [Delphi Redis Client VERSION 2](https://github.com/danieleteti/delphiredisclient) with full support for nullable types, GEO commands and a lot of new features.
 
 Delphi Redis Client is able to send all Redis commands and read the response using an internal parser. Moreover, many popular commands have a specialized dedicated metho which simplifies utilization.
 
