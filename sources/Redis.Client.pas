@@ -253,11 +253,33 @@ function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 
 implementation
 
-uses Redis.NetLib.Factory, System.Generics.Collections;
+uses
+  System.Generics.Collections, Redis.NetLib.Factory, Redis.Utils;
 
 const
   REDIS_GEO_UNIT_STRING: array [TRedisGeoUnit.Meters .. TRedisGeoUnit.Feet]
     of string = ('m', 'km', 'mi', 'ft');
+
+function NewRedisClient(const AHostName: string; const APort: Word;
+  const ALibName: string): IRedisClient;
+var
+  TCPLibInstance: IRedisNetLibAdapter;
+begin
+  TCPLibInstance := TRedisNetLibFactory.GET(ALibName);
+  Result := TRedisClient.Create(TCPLibInstance, AHostName, APort);
+  try
+    TRedisClient(Result).Connect;
+  except
+    Result := nil;
+    raise;
+  end;
+end;
+
+function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
+begin
+  Result := TRedisCommand.Create;
+  TRedisCommand(Result).SetCommand(RedisCommandString);
+end;
 
   { TRedisClient }
 
@@ -281,7 +303,7 @@ end;
 
 procedure TRedisClient.SELECT(const ADBIndex: Integer);
 begin
-  FNextCMD := GetCmdList('SELECT').Add(ADBIndex.ToString);
+  FNextCMD := GetCmdList('SELECT').Add(IntToStr(ADBIndex));
   ExecuteWithStringResult(FNextCMD);
 end;
 
@@ -332,7 +354,7 @@ begin
   lRes := InternalBlockingLeftOrRightPOP(FNextCMD, AKeys, ATimeout);
   Result := lRes.HasValue;
   if Result then
-    Value := lRes.ToArray;
+    Value := RedisArrayToArray(lRes);
   // Value := InternalBlockingLeftOrRightPOP(FNextCMD, AKeys, ATimeout,
   // FIsValidResponse);
   // Result := FIsValidResponse;
@@ -354,13 +376,13 @@ begin
   lRes := InternalBlockingLeftOrRightPOP(FNextCMD, AKeys, ATimeout);
   Result := lRes.HasValue;
   if Result then
-    Value := lRes.ToArray;
+    Value := RedisArrayToArray(lRes);
 end;
 
 procedure TRedisClient.CheckResponseError(const aResponse: string);
 begin
-  if aResponse.Chars[0] = '-' then
-    raise ERedisException.Create(aResponse.Substring(1))
+  if StringChars(aResponse, 0) = '-' then
+    raise ERedisException.Create(StringSubstring(aResponse, 1))
 end;
 
 procedure TRedisClient.CheckResponseType(Expected, Actual: string);
@@ -471,7 +493,7 @@ function TRedisClient.EXPIRE(const aKey: string;
   AExpireInSecond: UInt32): boolean;
 begin
   FTCPLibInstance.Write(GetCmdList('EXPIRE').Add(aKey)
-    .Add(AExpireInSecond.ToString).ToRedisCommand);
+    .Add(IntToStr(AExpireInSecond)).ToRedisCommand);
 
   {
     1 if the timeout was set.
@@ -785,7 +807,7 @@ function TRedisClient.InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
   AKeys: array of string; ATimeout: Int32): TRedisArray;
 begin
   NextCMD.AddRange(AKeys);
-  NextCMD.Add(ATimeout.ToString);
+  NextCMD.Add(IntToStr(ATimeout));
   FTCPLibInstance.SendCmd(NextCMD);
   Result := ParseArrayResponseNULL;
 end;
@@ -849,8 +871,8 @@ function TRedisClient.LRANGE(const aListKey: string;
 begin
   FNextCMD := GetCmdList('LRANGE');
   FNextCMD.Add(aListKey);
-  FNextCMD.Add(aIndexStart.ToString);
-  FNextCMD.Add(aIndexStop.ToString);
+  FNextCMD.Add(IntToStr(aIndexStart));
+  FNextCMD.Add(IntToStr(aIndexStop));
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
@@ -860,7 +882,7 @@ function TRedisClient.LREM(const aListKey: string; const ACount: Integer;
 begin
   FNextCMD := GetCmdList('LREM');
   FNextCMD.Add(aListKey);
-  FNextCMD.Add(ACount.ToString);
+  FNextCMD.Add(IntToStr(ACount));
   FNextCMD.Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
@@ -871,8 +893,8 @@ procedure TRedisClient.LTRIM(const aListKey: string;
 var
   lResult: string;
 begin
-  FNextCMD := GetCmdList('LTRIM').Add(aListKey).Add(aIndexStart.ToString)
-    .Add(aIndexStop.ToString);
+  FNextCMD := GetCmdList('LTRIM').Add(aListKey).Add(IntToStr(aIndexStart))
+    .Add(IntToStr(aIndexStop));
   lResult := ExecuteWithStringResult(FNextCMD);
   if lResult <> 'OK' then
     raise ERedisException.Create(lResult);
@@ -880,7 +902,7 @@ end;
 
 function TRedisClient.MOVE(const aKey: string; const aDB: Byte): boolean;
 begin
-  FNextCMD := GetCmdList('MOVE').Add(aKey).Add(aDB.ToString);
+  FNextCMD := GetCmdList('MOVE').Add(aKey).Add(IntToStr(aDB));
   Result := ExecuteWithIntegerResult(FNextCMD) = 1;
 end;
 
@@ -1011,9 +1033,9 @@ begin
     Exit;
   end;
 
-  if R.Chars[0] = '*' then
+  if StringChars(R, 0) = '*' then
   begin
-    ArrLength := R.Substring(1).ToInteger;
+    ArrLength := StringSubstringToInteger(R, 1);
   end
   else
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_ARRAY_RESPONSE);
@@ -1052,10 +1074,10 @@ begin
     Exit;
   CheckResponseError(R);
 
-  case R.Chars[0] of
+  case StringChars(R, 0) of
     ':':
       begin
-        if not TryStrToInt(R.Substring(1), I) then
+        if not TryStrToInt(StringSubstring(R, 1), I) then
           raise ERedisException.CreateFmt
             (TRedisConsts.ERR_NOT_A_VALID_INTEGER_RESPONSE +
             ' - Expected Integer got [%s]', [R]);
@@ -1063,7 +1085,7 @@ begin
       end;
     '$':
       begin
-        HowMany := R.Substring(1).ToInteger;
+        HowMany := StringSubstringToInteger(R, 1);
         if HowMany = -1 then
         begin
           AValidResponse := False;
@@ -1102,9 +1124,9 @@ begin
     Exit;
   end;
 
-  if R.Chars[0] = '*' then
+  if StringChars(R, 0) = '*' then
   begin
-    ArrLength := R.Substring(1).ToInteger;
+    ArrLength := StringSubstringToInteger(R, 1);
   end
   else
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_ARRAY_RESPONSE);
@@ -1161,14 +1183,14 @@ begin
   // For Bulk Strings the first byte of the reply is "$"
   // For Arrays the first byte of the reply is "*"
 
-  case R.Chars[0] of
+  case StringChars(R, 0) of
     '+':
-      Result := BytesOf(R.Substring(1));
+      Result := BytesOf(StringSubstring(R, 1));
     ':':
-      Result := BytesOf(R.Substring(1));
+      Result := BytesOf(StringSubstring(R, 1));
     '$':
       begin
-        HowMany := R.Substring(1).ToInteger;
+        HowMany := StringSubstringToInteger(R, 1);
         Result := FTCPLibInstance.ReceiveBytes(HowMany, FCommandTimeout);
         // eat crlf
         FTCPLibInstance.ReceiveBytes(2, FCommandTimeout);
@@ -1249,7 +1271,7 @@ begin
   FNextCMD := GetCmdList('BRPOPLPUSH');
   FNextCMD.Add(ARightListKey);
   FNextCMD.Add(ALeftListKey);
-  FNextCMD.Add(ATimeout.ToString);
+  FNextCMD.Add(IntToStr(ATimeout));
   FTCPLibInstance.SendCmd(FNextCMD);
 
   lValue := ParseSimpleStringResponse(FValidResponse);
@@ -1320,6 +1342,8 @@ end;
 
 function TRedisClient.&SET(const aKey: TBytes; aValue: TBytes;
   ASecsExpire: UInt64): boolean;
+var
+  lRes: TRedisBytes;
 begin
   FNextCMD := GetCmdList('SET');
   FNextCMD.Add(aKey);
@@ -1327,7 +1351,8 @@ begin
   FNextCMD.Add('EX');
   FNextCMD.Add(IntToStr(ASecsExpire));
   FTCPLibInstance.SendCmd(FNextCMD);
-  Result := ParseSimpleStringResponseAsByteNULL.HasValue
+  lRes := ParseSimpleStringResponseAsByteNULL; { Avoid XE2 F2084 Internal Error: URW1147 }
+  Result := lRes.HasValue;
 end;
 
 function TRedisClient.&SET(const aKey: string; aValue: string;
@@ -1399,10 +1424,10 @@ begin
   for I := 0 to Length(AChannels) - 1 do
   begin
     lArrNull := ParseArrayResponseNULL;
-    if (lArrNull.Items[0].Value.ToLower <> 'subscribe') or
-      (lArrNull.Items[1] <> AChannels[I]) then
+    if (LowerCase(RedisArrayGetItems(lArrNull, 0).Value) <> 'subscribe') or
+      (RedisArrayGetItems(lArrNull, 1) <> AChannels[I]) then
       raise ERedisException.Create('Invalid subscription response: ' +
-        string.Join('-', lArrNull.ToArray))
+        StringJoin('-', RedisArrayToArray(lArrNull)))
   end;
   // all is fine, now read the callbacks message
   if Assigned(aAfterSubscribe) then
@@ -1426,9 +1451,9 @@ begin
     end
     else
     begin
-      if lArrNull.Items[0] <> 'message' then
+      if RedisArrayGetItems(lArrNull, 0) <> 'message' then
         raise ERedisException.CreateFmt('Invalid reply: %s',
-          [string.Join('-', lArrNull.ToArray)]);
+          [StringJoin('-', RedisArrayToArray(lArrNull))]);
       lChannel := lArrNull.Value[1];
       lValue := lArrNull.Value[2];
       try
@@ -1490,7 +1515,7 @@ begin
             if C = '"' then
             begin
               CurState := SQUOTED;
-              if not Piece.IsEmpty then
+              if not StringIsEmpty(Piece) then
               begin
                 List.Add(Piece);
                 Piece := '';
@@ -1498,7 +1523,7 @@ begin
             end
             else if C = ' ' then
             begin
-              if not Piece.IsEmpty then
+              if not StringIsEmpty(Piece) then
               begin
                 List.Add(Piece);
                 Piece := '';
@@ -1513,7 +1538,7 @@ begin
     if CurState <> SSINK then
       raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_COMMAND);
 
-    if not Piece.IsEmpty then
+    if not StringIsEmpty(Piece) then
       List.Add(Piece);
 
     Result := List.ToArray;
@@ -1546,7 +1571,7 @@ function TRedisClient.ZADD(const aKey: string; const AScore: Int64;
   const AMember: string): Integer;
 begin
   FNextCMD := GetCmdList('ZADD');
-  FNextCMD.Add(aKey).Add(AScore.ToString).Add(AMember);
+  FNextCMD.Add(aKey).Add(IntToStr(AScore)).Add(AMember);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
@@ -1560,7 +1585,7 @@ function TRedisClient.ZCOUNT(const aKey: string;
   const AMin, AMax: Int64): Integer;
 begin
   FNextCMD := GetCmdList('ZCOUNT');
-  FNextCMD.Add(aKey).Add(AMin.ToString).Add(AMax.ToString);
+  FNextCMD.Add(aKey).Add(IntToStr(AMin)).Add(IntToStr(AMax));
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
@@ -1568,7 +1593,7 @@ function TRedisClient.ZINCRBY(const aKey: string; const AIncrement: Int64;
   const AMember: string): string;
 begin
   FNextCMD := GetCmdList('ZINCRBY');
-  FNextCMD.Add(aKey).Add(AIncrement.ToString).Add(AMember);
+  FNextCMD.Add(aKey).Add(IntToStr(AIncrement)).Add(AMember);
   Result := ExecuteWithStringResult(FNextCMD);
 end;
 
@@ -1576,7 +1601,7 @@ function TRedisClient.ZRANGE(const aKey: string; const AStart, AStop: Int64)
   : TRedisArray;
 begin
   FNextCMD := GetCmdList('ZRANGE');
-  FNextCMD.Add(aKey).Add(AStart.ToString).Add(AStop.ToString);
+  FNextCMD.Add(aKey).Add(IntToStr(AStart)).Add(IntToStr(AStop));
   Result := ExecuteAndGetArrayNULL(FNextCMD);
 end;
 
@@ -1584,7 +1609,7 @@ function TRedisClient.ZRANGEWithScore(const aKey: string;
   const AStart, AStop: Int64): TRedisArray;
 begin
   FNextCMD := GetCmdList('ZRANGE');
-  FNextCMD.Add(aKey).Add(AStart.ToString).Add(AStop.ToString).Add('WITHSCORES');
+  FNextCMD.Add(aKey).Add(IntToStr(AStart)).Add(IntToStr(AStop)).Add('WITHSCORES');
   Result := ExecuteAndGetArrayNULL(FNextCMD);
 end;
 
@@ -1602,27 +1627,6 @@ begin
   FNextCMD := GetCmdList('ZREM');
   FNextCMD.Add(aKey).Add(AMember);
   Result := ExecuteWithIntegerResult(FNextCMD);
-end;
-
-function NewRedisClient(const AHostName: string; const APort: Word;
-  const ALibName: string): IRedisClient;
-var
-  TCPLibInstance: IRedisNetLibAdapter;
-begin
-  TCPLibInstance := TRedisNetLibFactory.GET(ALibName);
-  Result := TRedisClient.Create(TCPLibInstance, AHostName, APort);
-  try
-    TRedisClient(Result).Connect;
-  except
-    Result := nil;
-    raise;
-  end;
-end;
-
-function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
-begin
-  Result := TRedisCommand.Create;
-  TRedisCommand(Result).SetCommand(RedisCommandString);
 end;
 
 function TRedisClient.GEOADD(const Key: string;
