@@ -55,6 +55,9 @@ type
     function ParseSimpleStringResponseAsByteNULL: TRedisBytes;
     function ParseSimpleStringResponseAsStringNULL: TRedisString;
   protected
+    procedure BuildZUNIONSTOREDefault(const aDestination: string;
+      const aNumKeys: NativeInt; const aKeys: array of string);
+
     function GetGEORADIUSCommand(const Key: string;
       const Longitude, Latitude: Extended; const Radius: Extended;
       const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting;
@@ -189,7 +192,12 @@ type
       : TRedisArray;
     function ZINCRBY(const aKey: string; const AIncrement: Int64;
       const AMember: string): string;
-
+    function ZUNIONSTORE(const aDestination: string;
+      const aNumKeys: NativeInt; const aKeys: array of string): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string;
+      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string;
+      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64; overload;
     // geo REDIS 3.2
     function GEOADD(const Key: string; const Latitude, Longitude: Extended;
       Member: string): Integer;
@@ -258,6 +266,7 @@ uses Redis.NetLib.Factory, System.Generics.Collections;
 const
   REDIS_GEO_UNIT_STRING: array [TRedisGeoUnit.Meters .. TRedisGeoUnit.Feet]
     of string = ('m', 'km', 'mi', 'ft');
+  REDIS_AGGREGATE: array [TRedisAggregate.Sum .. TRedisAggregate.Max] of string = ('SUM', 'MIN', 'MAX');
 
   { TRedisClient }
 
@@ -1261,6 +1270,19 @@ begin
   end;
 end;
 
+procedure TRedisClient.BuildZUNIONSTOREDefault(const aDestination: string;
+  const aNumKeys: NativeInt; const aKeys: array of string);
+var
+  lKey: string;
+begin
+  FNextCMD := GetCmdList('ZUNIONSTORE');
+  FNextCMD.Add(aDestination).Add(aNumKeys);
+  for lKey in aKeys do
+  begin
+    FNextCMD.Add(lKey);
+  end;
+end;
+
 function TRedisClient.RPOP(const aListKey: string): TRedisString;
 begin
   Result := POPCommands('RPOP', aListKey);
@@ -1601,6 +1623,44 @@ function TRedisClient.ZREM(const aKey, AMember: string): Integer;
 begin
   FNextCMD := GetCmdList('ZREM');
   FNextCMD.Add(aKey).Add(AMember);
+  Result := ExecuteWithIntegerResult(FNextCMD);
+end;
+
+function TRedisClient.ZUNIONSTORE(const aDestination: string;
+  const aNumKeys: NativeInt; const aKeys: array of string;
+  const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64;
+var
+  lWeight: Integer;
+begin
+  BuildZUNIONSTOREDefault(aDestination, aNumKeys, aKeys);
+  FNextCMD.Add('WEIGHTS');
+  for lWeight in aWeights do
+  begin
+    FNextCMD.Add(lWeight);
+  end;
+  FNextCMD.AddRange(['AGGREGATE', REDIS_AGGREGATE[aAggregate]]);
+  Result := ExecuteWithIntegerResult(FNextCMD);
+end;
+
+function TRedisClient.ZUNIONSTORE(const aDestination: string;
+  const aNumKeys: NativeInt; const aKeys: array of string;
+  const aWeights: array of Integer): Int64;
+var
+  lWeight: NativeInt;
+begin
+  BuildZUNIONSTOREDefault(aDestination, aNumKeys, aKeys);
+  FNextCMD.Add('WEIGHTS');
+  for lWeight in aWeights do
+  begin
+    FNextCMD.Add(lWeight);
+  end;
+  Result := ExecuteWithIntegerResult(FNextCMD);
+end;
+
+function TRedisClient.ZUNIONSTORE(const aDestination: string;
+  const aNumKeys: NativeInt; const aKeys: array of string): Int64;
+begin
+  BuildZUNIONSTOREDefault(aDestination, aNumKeys, aKeys);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 

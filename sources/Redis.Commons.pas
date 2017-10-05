@@ -57,6 +57,7 @@ type
 
   TRedisGeoUnit = (Meters, Kilometers, Miles, Feet);
   TRedisSorting = (None, Asc, Desc);
+  TRedisAggregate = (Sum, Min, Max);
 
   TRedisClientBase = class abstract(TInterfacedObject)
   protected
@@ -184,6 +185,12 @@ type
       : TRedisArray;
     function ZINCRBY(const aKey: string; const AIncrement: Int64;
       const AMember: string): string;
+    function ZUNIONSTORE(const aDestination: string;
+      const aNumKeys: NativeInt; const aKeys: array of string): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string;
+      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string;
+      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64; overload;
 
     // geo
     /// <summary>
