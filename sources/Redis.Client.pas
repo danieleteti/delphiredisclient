@@ -173,10 +173,13 @@ type
     // sets
     function SADD(const aKey, aValue: TBytes): Integer; overload;
     function SADD(const aKey, aValue: string): Integer; overload;
+    function SDIFF(const aKeys: array of string): TRedisArray;
     function SREM(const aKey, aValue: TBytes): Integer; overload;
     function SREM(const aKey, aValue: string): Integer; overload;
     function SMEMBERS(const aKey: string): TRedisArray;
     function SCARD(const aKey: string): Integer;
+    function SUNION(const aKeys: array of string): TRedisArray;
+    function SUNIONSTORE(const aDestination: string; const aKeys: array of string): Integer;
 
     // ordered sets
     function ZADD(const aKey: string; const AScore: Int64;
@@ -286,6 +289,13 @@ function TRedisClient.SCARD(const aKey: string): Integer;
 begin
   FNextCMD := GetCmdList('SCARD').Add(aKey);
   Result := ExecuteWithIntegerResult(FNextCMD);
+end;
+
+function TRedisClient.SDIFF(const aKeys: array of string): TRedisArray;
+begin
+  FNextCMD := GetCmdList('SDIFF').AddRange(aKeys);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseArrayResponseNULL;
 end;
 
 procedure TRedisClient.SELECT(const ADBIndex: Integer);
@@ -1460,6 +1470,21 @@ begin
       end;
     end;
   end;
+end;
+
+function TRedisClient.SUNION(const aKeys: array of string): TRedisArray;
+begin
+  FNextCMD := GetCmdList('SUNION').AddRange(aKeys);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseArrayResponseNULL;
+end;
+
+function TRedisClient.SUNIONSTORE(const aDestination: string;
+  const aKeys: array of string): Integer;
+begin
+  FNextCMD := GetCmdList('SUNIONSTORE').Add(aDestination).AddRange(aKeys);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseIntegerResponse(FValidResponse);
 end;
 
 function TRedisClient.Tokenize(const ARedisCommand: string): TArray<string>;

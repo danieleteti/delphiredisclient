@@ -166,10 +166,13 @@ type
     // sets
     function SADD(const aKey, aValue: TBytes): Integer; overload;
     function SADD(const aKey, aValue: string): Integer; overload;
+    function SDIFF(const aKeys: array of string): TRedisArray;
     function SREM(const aKey, aValue: TBytes): Integer; overload;
     function SREM(const aKey, aValue: string): Integer; overload;
     function SMEMBERS(const aKey: string): TRedisArray;
     function SCARD(const aKey: string): Integer;
+    function SUNION(const aKeys: array of string): TRedisArray;
+    function SUNIONSTORE(const aDestination: String; const aKeys: array of string): Integer;
 
     // ordered sets
     function ZADD(const aKey: string; const AScore: Int64;

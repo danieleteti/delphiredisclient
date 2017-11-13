@@ -56,6 +56,7 @@ type
     FArrRes: TArray<string>;
     FArrResNullable: TRedisArray;
     procedure LoadGeoData;
+    function Contains(const aValue: string; const aArray: TRedisArray): Boolean;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -106,6 +107,9 @@ type
     procedure TestBLPOP_NULLABLE;
     procedure TestZUNIONSTORE;
     procedure TestZUNIONSTORE_WEIGHTS;
+    procedure TestSUNION;
+    procedure TestSUNIONSTORE;
+    procedure TestSDIFF;
 
     // test Redis 3.2+ commands
     procedure TestGEODIST;
@@ -121,6 +125,19 @@ implementation
 
 uses System.rtti, System.Generics.Collections,
   System.Generics.Defaults, System.SyncObjs;
+
+function TestRedisClient.Contains(const aValue: string;
+  const aArray: TRedisArray): Boolean;
+var
+  lItem: TRedisString;
+begin
+  Result := False;
+  for lItem in aArray.Value do
+  begin
+    if lItem = aValue then
+      Exit(True);
+  end;
+end;
 
 procedure TestRedisClient.LoadGeoData;
 var
@@ -982,6 +999,29 @@ begin
   CheckEquals(False, FRedis.RPOP('mylist', Value));
 end;
 
+procedure TestRedisClient.TestSDIFF;
+var
+  lRes: TRedisArray;
+begin
+  FRedis.DEL(['set1', 'set2']);
+  FRedis.SADD('set1', 'first');
+  FRedis.SADD('set1', 'second');
+  FRedis.SADD('set1', 'third');
+  FRedis.SADD('set2', 'first');
+  FRedis.SADD('set2', 'second');
+  lRes := FRedis.SDIFF(['set1', 'set2']);
+  CheckTrue(lRes.HasValue);
+  CheckFalse(lRes.IsNull);
+
+  CheckEquals(1, Length(lRes.Value));
+  CheckEquals('third', lRes.Value[0]);
+
+  // check with empty sets
+  FRedis.DEL(['set1', 'set2']);
+  lRes := FRedis.SDIFF(['set1', 'set2']);
+  CheckFalse(lRes.HasValue);
+end;
+
 procedure TestRedisClient.TestSELECT;
 var
   lRes: string;
@@ -1349,6 +1389,58 @@ begin
     end;
     CheckEquals('hello', MSG);
   }
+end;
+
+procedure TestRedisClient.TestSUNION;
+var
+  lRes: TRedisArray;
+begin
+  FRedis.DEL(['set1', 'set2']);
+  FRedis.SADD('set1', 'first');
+  FRedis.SADD('set1', 'second');
+  FRedis.SADD('set2', 'first');
+  FRedis.SADD('set2', 'second');
+  FRedis.SADD('set2', 'third');
+  lRes := FRedis.SUNION(['set1', 'set2']);
+  CheckTrue(lRes.HasValue);
+  CheckFalse(lRes.IsNull);
+
+  CheckEquals(3, Length(lRes.Value));
+
+  CheckTrue(contains('first', lRes.Value));
+  CheckTrue(contains('second', lRes.Value));
+  CheckTrue(contains('third', lRes.Value));
+
+  // check with empty sets
+  FRedis.DEL(['set1', 'set2']);
+  lRes := FRedis.SUNION(['set1', 'set2']);
+  CheckFalse(lRes.HasValue);
+end;
+
+procedure TestRedisClient.TestSUNIONSTORE;
+var
+  lRes: Integer;
+  lArrRes: TRedisArray;
+begin
+  FRedis.DEL(['set1', 'set2']);
+  FRedis.SADD('set1', 'first');
+  FRedis.SADD('set1', 'second');
+  FRedis.SADD('set2', 'first');
+  FRedis.SADD('set2', 'second');
+  FRedis.SADD('set2', 'third');
+  lRes := FRedis.SUNIONSTORE('dest', ['set1', 'set2']);
+  CheckEquals(3, lRes);
+
+  lArrRes := FRedis.SMEMBERS('dest');
+
+  CheckTrue(contains('first', lArrRes.Value));
+  CheckTrue(contains('second', lArrRes.Value));
+  CheckTrue(contains('third', lArrRes.Value));
+
+  // check with empty sets
+  FRedis.DEL(['set1', 'set2']);
+  lRes := FRedis.SUNIONSTORE('dest', ['set1', 'set2']);
+  CheckEquals(0, lRes);
 end;
 
 initialization
