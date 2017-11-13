@@ -184,6 +184,8 @@ type
       out ARank: Int64): boolean;
     function ZRANGE(const aKey: string; const aStart, AStop: Int64)
       : TRedisArray;
+    function ZREVRANGE(const aKey: string; const aStart, AStop: Int64)
+      : TRedisArray;
     function ZRANGEWithScore(const aKey: string; const aStart, AStop: Int64)
       : TRedisArray;
     function ZINCRBY(const aKey: string; const AIncrement: Int64;
