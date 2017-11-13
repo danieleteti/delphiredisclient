@@ -191,6 +191,8 @@ type
       out ARank: Int64): boolean;
     function ZRANGE(const aKey: string; const AStart, AStop: Int64)
       : TRedisArray;
+    function ZREVRANGE(const aKey: string; const aStart, AStop: Int64)
+      : TRedisArray;
     function ZRANGEWithScore(const aKey: string; const AStart, AStop: Int64)
       : TRedisArray;
     function ZINCRBY(const aKey: string; const AIncrement: Int64;
@@ -1649,6 +1651,14 @@ begin
   FNextCMD := GetCmdList('ZREM');
   FNextCMD.Add(aKey).Add(AMember);
   Result := ExecuteWithIntegerResult(FNextCMD);
+end;
+
+function TRedisClient.ZREVRANGE(const aKey: string; const aStart,
+  AStop: Int64): TRedisArray;
+begin
+  FNextCMD := GetCmdList('ZREVRANGE');
+  FNextCMD.Add(aKey).Add(AStart.ToString).Add(AStop.ToString);
+  Result := ExecuteAndGetArrayNULL(FNextCMD);
 end;
 
 function TRedisClient.ZUNIONSTORE(const aDestination: string;

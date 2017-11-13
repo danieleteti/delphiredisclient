@@ -110,6 +110,8 @@ type
     procedure TestSUNION;
     procedure TestSUNIONSTORE;
     procedure TestSDIFF;
+    procedure TestZREVRANGE;
+    procedure TestZRANGE;
 
     // test Redis 3.2+ commands
     procedure TestGEODIST;
@@ -1296,6 +1298,34 @@ begin
   CheckEquals('third', lRes.Value[4]);
   CheckEquals('30', lRes.Value[5]);
 
+end;
+
+procedure TestRedisClient.TestZRANGE;
+var
+  lRes: TRedisArray;
+begin
+  FRedis.DEL(['ordset']);
+  FRedis.ZADD('ordset', 1, 'm1');
+  FRedis.ZADD('ordset', 2, 'm2');
+  FRedis.ZADD('ordset', 3, 'm3');
+  lRes := FRedis.ZRANGE('ordset', 0, -1);
+  CheckEquals('m1', lRes.Value[0].Value);
+  CheckEquals('m2', lRes.Value[1].Value);
+  CheckEquals('m3', lRes.Value[2].Value);
+end;
+
+procedure TestRedisClient.TestZREVRANGE;
+var
+  lRes: TRedisArray;
+begin
+  FRedis.DEL(['ordset']);
+  FRedis.ZADD('ordset', 1, 'm1');
+  FRedis.ZADD('ordset', 2, 'm2');
+  FRedis.ZADD('ordset', 3, 'm3');
+  lRes := FRedis.ZREVRANGE('ordset', 0, -1);
+  CheckEquals('m3', lRes.Value[0].Value);
+  CheckEquals('m2', lRes.Value[1].Value);
+  CheckEquals('m1', lRes.Value[2].Value);
 end;
 
 procedure TestRedisClient.TestSUBSCRIBE;
