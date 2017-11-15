@@ -1233,7 +1233,7 @@ begin
   FRedis.ZADD('zset2', 20, 'second');
   FRedis.ZADD('zset2', 30, 'third');
   CheckEquals(3, FRedis.ZUNIONSTORE('out', 2, ['zset1', 'zset2']));
-  lRes := FRedis.ZRANGEWithScore('out', 0, -1);
+  lRes := FRedis.ZRANGE('out', 0, -1, TRedisScoreMode.WithScores);
   CheckTrue(lRes.HasValue);
   CheckEquals('first', lRes.Value[0]);
   CheckEquals('11', lRes.Value[1]);
@@ -1256,7 +1256,7 @@ begin
 
   // With SUM
   CheckEquals(3, FRedis.ZUNIONSTORE('out', 2, ['zset1', 'zset2'], [2, 3]));
-  lRes := FRedis.ZRANGEWithScore('out', 0, -1);
+  lRes := FRedis.ZRANGE('out', 0, -1, TRedisScoreMode.WithScores);
   CheckTrue(lRes.HasValue);
   CheckEquals('first', lRes.Value[0]);
   CheckEquals('32', lRes.Value[1]);
@@ -1267,7 +1267,7 @@ begin
 
   // With EXPLICIT SUM
   CheckEquals(3, FRedis.ZUNIONSTORE('out', 2, ['zset1', 'zset2'], [2, 3], TRedisAggregate.Sum));
-  lRes := FRedis.ZRANGEWithScore('out', 0, -1);
+  lRes := FRedis.ZRANGE('out', 0, -1, TRedisScoreMode.WithScores);
   CheckTrue(lRes.HasValue);
   CheckEquals('first', lRes.Value[0]);
   CheckEquals('32', lRes.Value[1]);
@@ -1278,7 +1278,7 @@ begin
 
   // With EXPLICIT MIN
   CheckEquals(3, FRedis.ZUNIONSTORE('out', 2, ['zset1', 'zset2'], [1, 1], TRedisAggregate.Min));
-  lRes := FRedis.ZRANGEWithScore('out', 0, -1);
+  lRes := FRedis.ZRANGE('out', 0, -1, TRedisScoreMode.WithScores);
   CheckTrue(lRes.HasValue);
   CheckEquals('first', lRes.Value[0]);
   CheckEquals('1', lRes.Value[1]);
@@ -1289,7 +1289,7 @@ begin
 
   // With EXPLICIT MAX
   CheckEquals(3, FRedis.ZUNIONSTORE('out', 2, ['zset1', 'zset2'], [1, 1], TRedisAggregate.Max));
-  lRes := FRedis.ZRANGEWithScore('out', 0, -1);
+  lRes := FRedis.ZRANGE('out', 0, -1, TRedisScoreMode.WithScores);
   CheckTrue(lRes.HasValue);
   CheckEquals('first', lRes.Value[0]);
   CheckEquals('10', lRes.Value[1]);
@@ -1326,6 +1326,17 @@ begin
   CheckEquals('m3', lRes.Value[0].Value);
   CheckEquals('m2', lRes.Value[1].Value);
   CheckEquals('m1', lRes.Value[2].Value);
+
+  lRes := FRedis.ZREVRANGE('ordset', 0, -1, TRedisScoreMode.WithScores);
+  CheckEquals('m3', lRes.Value[0].Value);
+  CheckEquals('3', lRes.Value[1].Value);
+
+  CheckEquals('m2', lRes.Value[2].Value);
+  CheckEquals('2', lRes.Value[3].Value);
+
+  CheckEquals('m1', lRes.Value[4].Value);
+  CheckEquals('1', lRes.Value[5].Value);
+
 end;
 
 procedure TestRedisClient.TestSUBSCRIBE;

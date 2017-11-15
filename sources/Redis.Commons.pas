@@ -59,6 +59,8 @@ type
   TRedisSorting = (None, Asc, Desc);
   TRedisAggregate = (Sum, Min, Max);
 
+  TRedisScoreMode = (WithScores, WithoutScores);
+
   TRedisClientBase = class abstract(TInterfacedObject)
   protected
     function BytesOfUnicode(const AUnicodeString: string): TBytes;
@@ -182,12 +184,12 @@ type
     function ZCOUNT(const aKey: string; const AMin, AMax: Int64): Integer;
     function ZRANK(const aKey: string; const AMember: string;
       out ARank: Int64): boolean;
-    function ZRANGE(const aKey: string; const aStart, AStop: Int64)
-      : TRedisArray;
-    function ZREVRANGE(const aKey: string; const aStart, AStop: Int64)
-      : TRedisArray;
-    function ZRANGEWithScore(const aKey: string; const aStart, AStop: Int64)
-      : TRedisArray;
+    function ZRANGE(const aKey: string; const aStart, AStop: Int64;
+      const aScores: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
+    function ZREVRANGE(const aKey: string; const aStart, AStop: Int64;
+      const aScoreMode: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
+//    function ZRANGEWithScore(const aKey: string; const aStart, AStop: Int64)
+//      : TRedisArray;
     function ZINCRBY(const aKey: string; const AIncrement: Int64;
       const AMember: string): string;
     function ZUNIONSTORE(const aDestination: string;
