@@ -3,7 +3,7 @@ unit Redis.Client;
 interface
 
 uses
-  Generics.Collections, System.SysUtils, Redis.Command, Redis.Commons;
+  System.Generics.Collections, System.SysUtils, Redis.Command, Redis.Commons;
 
 type
   TRedisClient = class(TRedisClientBase, IRedisClient)
@@ -25,6 +25,7 @@ type
     function ParseIntegerResponse(var AValidResponse
       : boolean): Int64;
     function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
+    function ParseCursorArrayResponse(var AValidResponse: boolean; var ANextCursor: Integer): TArray<string>;
     procedure CheckResponseType(Expected, Actual: string);
   protected
     procedure CheckResponseError(const aResponse: string);
@@ -147,6 +148,11 @@ type
     function EXEC: TArray<string>;
     procedure WATCH(const AKeys: array of string);
     procedure DISCARD;
+
+    // scan
+    function SCAN(const ACursor: Integer; const AMatch: string; const ACount: Integer;
+      out ANextCursor: Integer): TArray<string>;
+
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
       : TArray<string>;
@@ -168,7 +174,7 @@ function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 
 implementation
 
-uses Redis.NetLib.Factory, System.Generics.Collections;
+uses Redis.NetLib.Factory;
 
 { TRedisClient }
 
@@ -182,6 +188,27 @@ end;
 function TRedisClient.SADD(const AKey, AValue: string): Integer;
 begin
   Result := SADD(BytesOfUnicode(AKey), BytesOfUnicode(AValue));
+end;
+
+function TRedisClient.SCAN(const ACursor: Integer; const AMatch: string; const ACount: Integer;
+  out ANextCursor: Integer): TArray<string>;
+begin
+  FNextCMD := GetCmdList('SCAN').Add(ACursor);
+  if AMatch <> '' then
+    FNextCMD.Add('MATCH').Add(AMatch);
+  if ACount > 0 then
+    FNextCMD.Add('COUNT').Add(IntToStr(ACount));
+
+  SetLength(Result, 0);
+
+  FTCPLibInstance.SendCmd(FNextCMD);
+
+  Result := ParseCursorArrayResponse(FValidResponse, ANextCursor);
+
+  if FTCPLibInstance.LastReadWasTimedOut then
+    Exit;
+  if not FValidResponse then
+    raise ERedisException.Create('Not valid response');
 end;
 
 function TRedisClient.SCARD(const AKey: string): Integer;
@@ -766,6 +793,45 @@ begin
     if I >= ArrLength then
       break;
   end;
+end;
+
+function TRedisClient.ParseCursorArrayResponse(var AValidResponse: boolean;
+  var ANextCursor: Integer): TArray<string>;
+var
+  R: string;
+  ArrLength: Integer;
+begin
+  // In RESP, the type of some data depends on the first byte:
+  // For Simple Strings the first byte of the reply is "+"
+  // For Errors the first byte of the reply is "-"
+  // For Integers the first byte of the reply is ":"
+  // For Bulk Strings the first byte of the reply is "$"
+  // For Arrays the first byte of the reply is "*"
+
+  AValidResponse := True;
+  NextToken(R);
+  if FIsTimeout then
+    Exit;
+  CheckResponseError(R);
+
+  if R = TRedisConsts.NULL_ARRAY then
+  begin
+    AValidResponse := False;
+    Exit;
+  end;
+
+  if R.Chars[0] = '*' then
+  begin
+    ArrLength := R.Substring(1).ToInteger;
+  end
+  else
+    raise ERedisException.Create('Invalid response length, invalid array response');
+
+  if ArrLength <> 2 then
+    raise ERedisException.Create('Invalid response length, invalid cursor array response');
+
+  ANextCursor := StringOfUnicode(ParseSimpleStringResponseAsByte(FNotExists)).ToInteger;
+  Result := ParseArrayResponse(AValidResponse);
 end;
 
 function TRedisClient.ParseIntegerResponse(var AValidResponse
