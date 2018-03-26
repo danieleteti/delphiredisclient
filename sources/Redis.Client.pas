@@ -19,6 +19,7 @@ type
     FIsValidResponse: boolean;
     FInTransaction: boolean;
     FIsTimeout: boolean;
+    FUseSSL: Boolean;
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseSimpleStringResponseAsByte(var AValidResponse
       : boolean): TBytes;
@@ -36,11 +37,11 @@ type
       AKeys: array of string; ATimeout: Int32; var AIsValidResponse: boolean)
       : TArray<string>;
     constructor Create(TCPLibInstance: IRedisNetLibAdapter;
-      const HostName: string; const Port: Word); overload;
+      const HostName: string; const Port: Word; const AUseSSL: Boolean = False); overload;
   public
     function Tokenize(const ARedisCommand: string): TArray<string>;
     constructor Create(const HostName: string = '127.0.0.1'; const Port: Word = 6379;
-      const Lib: string = REDIS_NETLIB_INDY); overload;
+      const AUseSSL: Boolean = False; const Lib: string = REDIS_NETLIB_INDY); overload;
     destructor Destroy; override;
     procedure Connect;
     /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
@@ -163,7 +164,7 @@ type
   end;
 
 function NewRedisClient(const AHostName: string = 'localhost';
-  const APort: Word = 6379; const ALibName: string = REDIS_NETLIB_INDY): IRedisClient;
+  const APort: Word = 6379; const AUseSSL: Boolean = False; const ALibName: string = REDIS_NETLIB_INDY): IRedisClient;
 function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 
 implementation
@@ -275,28 +276,29 @@ end;
 
 function TRedisClient.Clone: IRedisClient;
 begin
-  Result := NewRedisClient(FHostName, FPort, FTCPLibInstance.LibName);
+  Result := NewRedisClient(FHostName, FPort, FUseSSL, FTCPLibInstance.LibName);
 end;
 
 procedure TRedisClient.Connect;
 begin
-  FTCPLibInstance.Connect(FHostName, FPort);
+  FTCPLibInstance.Connect(FHostName, FPort, FUseSSL);
 end;
 
 constructor TRedisClient.Create(const HostName: string; const Port: Word;
-  const Lib: string);
+  const AUseSSL: Boolean; const Lib: string);
 var
   TCPLibInstance: IRedisNetLibAdapter;
 begin
   inherited Create;
   TCPLibInstance := TRedisNetLibFactory.GET(Lib);
-  Create(TCPLibInstance, HostName, Port);
+  Create(TCPLibInstance, HostName, Port, AUseSSL);
 end;
 
 constructor TRedisClient.Create(TCPLibInstance: IRedisNetLibAdapter;
-  const HostName: string; const Port: Word);
+  const HostName: string; const Port: Word; const AUseSSL: Boolean);
 begin
   inherited Create;
+  FUseSSL := AUseSSL;
   FTCPLibInstance := TCPLibInstance;
   FHostName := HostName;
   FPort := Port;
@@ -1241,13 +1243,13 @@ begin
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
-function NewRedisClient(const AHostName: string; const APort: Word;
+function NewRedisClient(const AHostName: string; const APort: Word; const AUseSSL: Boolean; 
   const ALibName: string): IRedisClient;
 var
   TCPLibInstance: IRedisNetLibAdapter;
 begin
   TCPLibInstance := TRedisNetLibFactory.GET(ALibName);
-  Result := TRedisClient.Create(TCPLibInstance, AHostName, APort);
+  Result := TRedisClient.Create(TCPLibInstance, AHostName, APort, AUseSSL);
   try
     TRedisClient(Result).Connect;
   except

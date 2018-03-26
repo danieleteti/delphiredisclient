@@ -172,7 +172,7 @@ type
 
   IRedisNetLibAdapter = interface
     ['{2DB21166-2E68-4DC4-9870-5DCCAAE877A3}']
-    procedure Connect(const HostName: string; const Port: Word);
+    procedure Connect(const HostName: string; const Port: Word; const AUseSSL: Boolean = False);
     procedure Send(const Value: string);
     procedure Write(const Bytes: TBytes);
     procedure WriteCrLf(const Bytes: TBytes);

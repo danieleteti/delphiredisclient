@@ -10,7 +10,7 @@ type
   TRedisNetLibAdapter = class abstract(TInterfacedObject, IRedisNetLibAdapter)
     constructor Create; virtual;
   protected
-    procedure Connect(const HostName: string; const Port: Word);
+    procedure Connect(const HostName: string; const Port: Word; const AUseSSL: Boolean = False);
       virtual; abstract;
     procedure Send(const Value: string); virtual; abstract;
     procedure SendCmd(const Values: IRedisCommand); virtual; abstract;

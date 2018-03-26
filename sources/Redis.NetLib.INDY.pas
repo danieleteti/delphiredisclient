@@ -13,7 +13,7 @@ type
     constructor Create; override;
     destructor Destroy; override;
     { ===IRedisTCPLib=== }
-    procedure Connect(const HostName: string; const Port: Word); override;
+    procedure Connect(const HostName: string; const Port: Word; const AUseSSL: Boolean = False); override;
     procedure Disconnect; override;
     function Receive(const Timeout: Int32): string; override;
     function ReceiveBytes(const ACount: Int64; const Timeout: Int32)
@@ -30,12 +30,17 @@ type
 implementation
 
 uses
-  System.SysUtils, idGlobal, IdIOHandler;
+  System.SysUtils, idGlobal, IdIOHandler, IdSSLOpenSSL;
 
 { TRedisTCPLibINDY }
 
-procedure TRedisTCPLibINDY.Connect(const HostName: string; const Port: Word);
+procedure TRedisTCPLibINDY.Connect(const HostName: string; const Port: Word; const AUseSSL: Boolean);
 begin
+  if AUseSSL then
+  begin
+    FTCPClient.IOHandler := TIdSSLIOHandlerSocketOpenSSL.Create(FTCPClient);
+  end;
+
   FTCPClient.Connect(HostName, Port);
   FTCPClient.IOHandler.MaxLineLength := IdMaxLineLengthDefault * 1000;
 end;
