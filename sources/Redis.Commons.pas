@@ -126,6 +126,10 @@ type
     procedure SELECT(const ADBIndex: Integer);
     procedure AUTH(const aPassword: string);
 
+    // scan
+    function SCAN(const ACursor: Integer; const AMatch: string; const ACount: Integer;
+      out ANextCursor: Integer): TArray<string>;
+
     // raw execute
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand)
       : TArray<string>;
