@@ -118,6 +118,7 @@ begin
   FParts.Clear;
   FParts.Add(TEncoding.ASCII.GetBytes(AString));
   FCommandIsSet := True;
+  Result := Self;
 end;
 
 function TRedisCommand.ToRedisCommand: TBytes;
