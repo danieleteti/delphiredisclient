@@ -44,6 +44,7 @@ type
     FIsValidResponse: boolean;
     FInTransaction: boolean;
     FIsTimeout: boolean;
+    FFormatSettings: TFormatSettings;
     function Redis_BytesToString(aValue: TRedisBytes): TRedisString;
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseIntegerResponse(var AValidResponse: boolean): Int64;
@@ -420,6 +421,7 @@ begin
   inherited Create;
   TCPLibInstance := TRedisNetLibFactory.GET(Lib);
   Create(TCPLibInstance, HostName, Port);
+  FFormatSettings.DecimalSeparator := '.';
 end;
 
 constructor TRedisClient.Create(TCPLibInstance: IRedisNetLibAdapter;
@@ -1057,7 +1059,7 @@ end;
 function TRedisClient.ParseIntegerResponse(var AValidResponse: boolean): Int64;
 var
   R: string;
-  I: Integer;
+  I: Int64;
   HowMany: Integer;
 begin
   Result := -1;
@@ -1077,7 +1079,7 @@ begin
   case R.Chars[0] of
     ':':
       begin
-        if not TryStrToInt(R.Substring(1), I) then
+        if not TryStrToInt64(R.Substring(1), I) then
           raise ERedisException.CreateFmt
             (TRedisConsts.ERR_NOT_A_VALID_INTEGER_RESPONSE +
             ' - Expected Integer got [%s]', [R]);
@@ -1735,8 +1737,8 @@ var
 begin
   lCmd := NewRedisCommand('GEOADD');
   lCmd.Add(Key);
-  lCmd.Add(FormatFloat('0.0000000', Latitude));
-  lCmd.Add(FormatFloat('0.0000000', Longitude));
+  lCmd.Add(FormatFloat('0.000000', Latitude, FFormatSettings));
+  lCmd.Add(FormatFloat('0.000000', Longitude, FFormatSettings));
   lCmd.Add(Member);
   Result := ExecuteWithIntegerResult(lCmd);
 end;

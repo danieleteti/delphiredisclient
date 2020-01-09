@@ -149,33 +149,38 @@ var
   lLat: string;
   lLon: string;
   lCity: string;
+  lFS: TFormatSettings;
+  lCityCount: Integer;
 const
   CITY = 1;
-  LAT = 3;
-  LON = 4;
+  LAT = 2;
+  LON = 3;
 begin
+  FRedis.DEL([KEY_GEODATA]);
   if FRedis.EXISTS(KEY_GEODATA) then
     Exit;
-
-  lReader := TStreamReader.Create(TFileStream.Create('ITALIANCITIES.TXT',
+  lFS.DecimalSeparator := '.';
+  lReader := TStreamReader.Create(TFileStream.Create('worldcities.csv',
     fmOpenRead, fmShareExclusive), TEncoding.UTF8);
   try
     lReader.OwnStream;
     lLine := lReader.ReadLine; // headers
     FRedis.DEL([KEY_GEODATA]);
-    while not lReader.EndOfStream do
+    lCityCount := 0;
+    while (not lReader.EndOfStream) and (lCityCount < 200) do
     begin
       lLine := lReader.ReadLine;
-      if lLine.IsEmpty or (lLine.Chars[0] <> '(') then
+      if lLine.IsEmpty then
         Continue;
       lPieces := lLine.Split([',']);
-      if Length(lPieces) <> 10 then
+      if Length(lPieces) <> 11 then
         Continue;
-      lLat := lPieces[LAT].Trim.DeQuotedString;
-      lLon := lPieces[LON].Trim.DeQuotedString;
-      lCity := lPieces[CITY].Trim.DeQuotedString.ToLower;
+      lLat := lPieces[LAT].Trim.DeQuotedString('"');
+      lLon := lPieces[LON].Trim.DeQuotedString('"');
+      lCity := lPieces[CITY].Trim.DeQuotedString('"').ToLower;
       try
-        FRedis.GEOADD(KEY_GEODATA, StrToFloat(lLat), StrToFloat(lLon), lCity);
+        FRedis.GEOADD(KEY_GEODATA, StrToFloat(lLat, lFS), StrToFloat(lLon, lFS), lCity);
+        Inc(lCityCount);
       except
         // ignore invalid coords in the file
       end;
@@ -219,8 +224,7 @@ end;
 procedure TestRedisClient.TestBLPOP;
 begin
 
-  {$WARN SYMBOL_DEPRECATED OFF}
-
+{$WARN SYMBOL_DEPRECATED OFF}
   // setup list
   FRedis.DEL(['mylist']);
   FRedis.RPUSH('mylist', ['one', 'two']);
@@ -462,26 +466,26 @@ begin
   FS.DecimalSeparator := '.';
   LoadGeoData;
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'milano',
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'new york', 'cairo',
     TRedisGeoUnit.Kilometers);
   CheckTrue(lResp.HasValue);
-  CheckTrue(StrToFloat(lResp, FS) > 500);
+  CheckTrue(StrToFloat(lResp, FS) > 5000);
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'milano', TRedisGeoUnit.Meters);
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'new york', 'cairo', TRedisGeoUnit.Meters);
   CheckTrue(lResp.HasValue);
-  CheckTrue(StrToFloat(lResp, FS) > 500 * 1000);
+  CheckTrue(StrToFloat(lResp, FS) > 600 * 5000);
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'viterbo',
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'rome', 'milan',
     TRedisGeoUnit.Kilometers);
   CheckTrue(lResp.HasValue);
-  CheckTrue(StrToFloat(lResp, FS) < 100);
+  CheckTrue(StrToFloat(lResp, FS) < 700);
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'roma', 'roma',
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'rome', 'rome',
     TRedisGeoUnit.Kilometers);
   CheckTrue(lResp.HasValue);
   CheckTrue(StrToFloat(lResp, FS) = 0);
 
-  lResp := FRedis.GEODIST(KEY_GEODATA, 'romakkk', 'kkkviterbo',
+  lResp := FRedis.GEODIST(KEY_GEODATA, 'nowhere', 'nowheretoo',
     TRedisGeoUnit.Kilometers);
   CheckFalse(lResp.HasValue);
 end;
@@ -503,13 +507,13 @@ var
 begin
   LoadGeoData;
 
-  lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['roma']);
+  lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['rome']);
   CheckFalse(lMatrixResp.IsNull);
   CheckFalse(lMatrixResp.Items[0].IsNull);
   CheckEqualsString('41.90000206232070923', lMatrixResp.Items[0].Items[0]);
   CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[1]);
 
-  lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['roma', 'milano']);
+  lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['rome', 'milan']);
   CheckFalse(lMatrixResp.IsNull);
   CheckFalse(lMatrixResp.Items[0].IsNull);
   CheckFalse(lMatrixResp.Items[1].IsNull);
@@ -1042,8 +1046,7 @@ var
   Res: string;
 begin
 
-  {$WARN SYMBOL_DEPRECATED OFF}
-
+{$WARN SYMBOL_DEPRECATED OFF}
   /// ///////////////////////////////////////////////////////
   // DEPRECATION WARNINGS IN THIS TEST ARE OK! DO NOT CHANGE!
   /// ///////////////////////////////////////////////////////
