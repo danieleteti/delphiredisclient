@@ -22,13 +22,12 @@
 //
 // ***************************************************************************
 
-
 unit Redis.Values;
 
 interface
 
 uses
-  SysUtils;
+  SysUtils, JsonDataObjects;
 
 type
   TRedisNullable<T> = record
@@ -60,6 +59,8 @@ type
 
   TRedisMatrix = TRedisNullable<TArray<TRedisArray>>;
 
+  TRedisRESPArray = TJDOJsonArray;
+
 type
   TRedisStringHelper = record helper for TRedisString
   public
@@ -86,6 +87,11 @@ type
   public
     property Items[const aIndex: UInt64]: TRedisArray read GetItems;
     property Count: UInt64 read GetCount;
+  end;
+
+  TRedisRESPArrayHelper = class helper for TRedisRESPArray
+    function GetMessagesFromStream(
+  const StreamName: String; const RaiseExceptionIfNotFound: Boolean = True): TRedisRESPArray;
   end;
 
 const
@@ -231,6 +237,35 @@ end;
 function TRedisMatrixHelper.GetItems(const aIndex: UInt64): TRedisArray;
 begin
   Result := FValue[aIndex];
+end;
+
+{ TRedisRESPArrayHelper }
+
+function TRedisRESPArrayHelper.GetMessagesFromStream(
+  const StreamName: String; const RaiseExceptionIfNotFound: Boolean = True): TRedisRESPArray;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to Self.Count - 1 do
+  begin
+    if Self.Items[i].Typ <> jdtArray then
+    begin
+      raise ERedisException.Create('Invalid Structure');
+    end
+    else
+    begin
+      if SameText(Self.Items[i].ArrayValue.Items[0].Value, StreamName) then
+      begin
+        Result := Self.Items[i].ArrayValue.Items[1].ArrayValue;
+        Exit;
+      end;
+    end;
+  end;
+  if RaiseExceptionIfNotFound then
+  begin
+    raise ERedisException.Create('Error Message');
+  end;
 end;
 
 end.

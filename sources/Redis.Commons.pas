@@ -42,6 +42,11 @@ type
 
   end;
 
+  ERedisConnectionException = class(ERedisException)
+
+  end;
+
+
   TRedisConsts = class sealed
   const
     TTL_KEY_DOES_NOT_EXIST = -2;
@@ -58,6 +63,8 @@ type
   TRedisGeoUnit = (Meters, Kilometers, Miles, Feet);
   TRedisSorting = (None, Asc, Desc);
   TRedisAggregate = (Sum, Min, Max);
+  TRedisMaxLengthType = (Exact, AtLeast);
+
 
   TRedisScoreMode = (WithScores, WithoutScores);
 
@@ -100,8 +107,8 @@ type
     function EXISTS(const aKey: string): boolean;
     function MSET(const aKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TRedisArray;
-    function INCR(const aKey: string): NativeInt;
-    function DECR(const aKey: string): NativeInt;
+    function INCR(const aKey: string): Int64;
+    function DECR(const aKey: string): Int64;
     function EXPIRE(const aKey: string; aExpireInSecond: UInt32): boolean;
     function PERSIST(const aKey: string): boolean;
     function RANDOMKEY: TRedisString;
@@ -251,6 +258,7 @@ type
     function MOVE(const aKey: string; const aDB: Byte): boolean;
 
     // raw execute
+    function ExecuteAndGetRESPArray(const RedisCommand: IRedisCommand): TRedisRESPArray;
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TRedisArray;
     function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
       : Int64; overload;
@@ -270,6 +278,15 @@ type
     procedure WATCH(const aKeys: array of string);
 
     procedure DISCARD;
+
+    {$REGION STREAMS}
+      function XADD(const aStreamName: String; const MaxLength: UInt64;
+        const MaxLengthType: TRedisMaxLengthType; const Keys,
+        Values: array of string; const ID: UInt64 = 0): String; overload;
+      function XADD(const aStreamName: String; const Keys,
+        Values: array of string; const ID: UInt64 = 0): String; overload;
+    {$ENDREGION}
+
     // non sys
     function Tokenize(const aRedisCommand: string): TArray<string>;
     procedure Connect;

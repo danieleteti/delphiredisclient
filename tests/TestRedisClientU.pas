@@ -64,6 +64,7 @@ type
     procedure TestCommandParser;
     procedure TestExecuteWithStringArrayResponse;
     procedure TestSetGet;
+    procedure TestIssue_18;
     procedure TestSetGetUnicode;
     procedure TestAPPEND;
     procedure TestKEYS;
@@ -758,6 +759,18 @@ begin
   CheckEquals(1, FRedis.DECR('daniele'));
   FRedis.DEL(['daniele']);
   CheckEquals(-1, FRedis.DECR('daniele'));
+end;
+
+procedure TestRedisClient.TestIssue_18;
+var
+  lKey: string;
+  lv: Int64;
+begin
+  lKey := 'userdb1';
+  FRedis.&SET(lKey, '10000010004');
+  lv := FRedis.INCR(lKey);
+  CheckEquals(10000010005, lv)
+  // WriteLn('lv = ', lv); //lv result is not 10000010005
 end;
 
 procedure TestRedisClient.TestKEYS;
