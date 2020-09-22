@@ -435,10 +435,11 @@ begin
     begin
       lCmd.Add(lPar);
     end;
-    for lPar in AValues do
-    begin
-      lCmd.Add(lPar);
-    end;
+  end;
+  
+  for lPar in AValues do
+  begin
+    lCmd.Add(lPar);
   end;
 
   Result := ExecuteWithIntegerResult(lCmd);
