@@ -73,7 +73,7 @@ uses system.rtti;
 
 procedure TestRedisClient.SetUp;
 begin
-  FRedis := NewRedisClient('localhost', 6379, 'indy');
+  FRedis := NewRedisClient;
 end;
 
 procedure TestRedisClient.TearDown;
@@ -84,7 +84,6 @@ end;
 procedure TestRedisClient.TestAPPEND;
 var
   lValue: string;
-  Value: TValue;
 begin
   FRedis.DEL(['mykey']);
   CheckEquals(4, FRedis.APPEND('mykey', '1234'), 'Wrong length');
@@ -126,7 +125,7 @@ begin
     var
       Redis: IRedisClient;
     begin
-      Redis := NewRedisClient('localhost');
+      Redis := NewRedisClient;
       Redis.RPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
 
@@ -160,7 +159,7 @@ begin
     var
       Redis: IRedisClient;
     begin
-      Redis := NewRedisClient('localhost');
+      Redis := NewRedisClient;
       Redis.RPUSH('mylist', ['from', 'another', 'thread']);
     end).Start;
 
