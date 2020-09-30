@@ -39,6 +39,7 @@ begin
   if AUseSSL then
   begin
     FTCPClient.IOHandler := TIdSSLIOHandlerSocketOpenSSL.Create(FTCPClient);
+    (FTCPClient.IOHandler as TIdSSLIOHandlerSocketOpenSSL).PassThrough := False;
   end;
 
   FTCPClient.Connect(HostName, Port);
