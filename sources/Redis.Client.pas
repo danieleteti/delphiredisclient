@@ -185,6 +185,8 @@ type
     function SREM(const aKey, aValue: TBytes): Integer; overload;
     function SREM(const aKey, aValue: string): Integer; overload;
     function SMEMBERS(const aKey: string): TRedisArray;
+    function SISMEMBER(const aKey, aValue: TBytes): Integer; overload;
+    function SISMEMBER(const aKey, aValue: string): Integer; overload;
     function SCARD(const aKey: string): Integer;
     function SUNION(const aKeys: array of string): TRedisArray;
     function SUNIONSTORE(const aDestination: string; const aKeys: array of string): Integer;
@@ -1510,6 +1512,18 @@ begin
   FNextCMD := GetCmdList('SETRANGE').Add(aKey).Add(AOffset).Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FIsValidResponse);
+end;
+
+function TRedisClient.SISMEMBER(const aKey, aValue: string): Integer;
+begin
+  Result := SREM(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
+end;
+
+function TRedisClient.SISMEMBER(const aKey, aValue: TBytes): Integer;
+begin
+  FNextCMD := GetCmdList('SISMEMBER').Add(aKey).Add(aValue);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseIntegerResponse(FValidResponse);
 end;
 
 function TRedisClient.SMEMBERS(const aKey: string): TRedisArray;

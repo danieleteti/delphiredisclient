@@ -178,6 +178,8 @@ type
     function SDIFF(const aKeys: array of string): TRedisArray;
     function SREM(const aKey, aValue: TBytes): Integer; overload;
     function SREM(const aKey, aValue: string): Integer; overload;
+    function SISMEMBER(const aKey, aValue: TBytes): Integer; overload;
+    function SISMEMBER(const aKey, aValue: string): Integer; overload;
     function SMEMBERS(const aKey: string): TRedisArray;
     function SCARD(const aKey: string): Integer;
     function SUNION(const aKeys: array of string): TRedisArray;
