@@ -1468,6 +1468,9 @@ begin
   CheckTrue(contains('second', lRes.Value));
   CheckTrue(contains('third', lRes.Value));
 
+  CheckTrue(FRedis.SISMEMBER('set1', 'first') = 1);
+  CheckTrue(FRedis.SISMEMBER('set1', 'third') = 0);
+
   // check with empty sets
   FRedis.DEL(['set1', 'set2']);
   lRes := FRedis.SUNION(['set1', 'set2']);
