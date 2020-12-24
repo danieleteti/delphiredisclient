@@ -123,6 +123,8 @@ type
     function MSET(const AKeysValues: array of string): boolean;
     function KEYS(const AKeyPattern: string): TRedisArray;
     function EXPIRE(const aKey: string; AExpireInSecond: UInt32): boolean;
+    function RENAME(const aKey, aNewKey: string): boolean;
+    function RENAMENX(const aKey, aNewKey: string): boolean;	
     // string functions
     function APPEND(const aKey, aValue: TBytes): UInt64; overload;
     function APPEND(const aKey, aValue: string): UInt64; overload;
@@ -523,6 +525,30 @@ begin
     0 if key does not exist or the timeout could not be set.
   }
   Result := ParseIntegerResponse(FValidResponse) = 1;
+end;
+
+function TRedisClient.RENAME(const aKey, aNewKey: string): boolean;
+var
+  lRes: TRedisString;
+begin
+  FNextCMD := GetCmdList('RENAME');
+  FNextCMD.Add(aKey);
+  FNextCMD.Add(aNewKey);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  lRes := ParseSimpleStringResponseAsStringNULL;
+  Result := lRes.HasValue;
+end;
+
+function TRedisClient.RENAMENX(const aKey, aNewKey: string): boolean;
+var
+  lRes: TRedisString;
+begin
+  FNextCMD := GetCmdList('RENAMENX');
+  FNextCMD.Add(aKey);
+  FNextCMD.Add(aNewKey);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  lRes := ParseSimpleStringResponseAsStringNULL;
+  Result := lRes.HasValue;
 end;
 
 function TRedisClient.EVAL(const AScript: string;

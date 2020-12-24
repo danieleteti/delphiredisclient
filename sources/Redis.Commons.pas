@@ -112,6 +112,8 @@ type
     function EXPIRE(const aKey: string; aExpireInSecond: UInt32): boolean;
     function PERSIST(const aKey: string): boolean;
     function RANDOMKEY: TRedisString;
+    function RENAME(const aKey, aNewKey: string): boolean;
+    function RENAMENX(const aKey, aNewKey: string): boolean;	
 
     // strings functions
     function APPEND(const aKey, aValue: TBytes): UInt64; overload;
