@@ -74,6 +74,7 @@ type
     procedure TestMSET;
     procedure TestINCR_DECR;
     procedure TestEXPIRE;
+    procedure TestRENAME;
     procedure TestDelete;
     procedure TestRPUSH_RPOP;
     procedure TestRPUSHX_LPUSHX;
@@ -955,6 +956,16 @@ begin
   lRes := FRedis.RANDOMKEY;
   CheckFalse(lRes.IsNull);
   CheckEquals('mykey', lRes.Value);
+end;
+
+procedure TestRedisClient.TestRENAME;
+var
+  lRes: TRedisString;
+begin
+  FRedis.&SET('myrename', '1234');
+  FRedis.RENAME('myrename', 'myrename2');
+  lRes := FRedis.GET('myrename2');
+  CheckEquals('1234', lRes);
 end;
 
 procedure TestRedisClient.TestRPOPLPUSH;
