@@ -167,6 +167,7 @@
         <DCCReference Include="..\sources\Redis.Values.pas"/>
         <DCCReference Include="TestRedisValuesU.pas"/>
         <DCCReference Include="..\sources\RedisMQ.Commands.pas"/>
+        <DCCReference Include="..\sources\JsonDataObjects.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

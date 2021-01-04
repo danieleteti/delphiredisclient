@@ -142,6 +142,12 @@ type
     function HMGET(const aKey: string; aFields: TArray<string>)
       : TRedisArray; overload;
     function HDEL(const aKey: string; aFields: TArray<string>): Integer;
+    function HKEYS(const aKey: string): TRedisArray;
+    function HVALS(const aKey: string): TRedisArray;
+    function HEXISTS(const aKey, aField: string): Boolean;
+    function HLEN(const aKey: string): Integer;
+    function HINCRBY(const aKey, aField: string; const AIncrement: NativeInt): Integer;
+    function HINCRBYFLOAT(const aKey, aField: string; const AIncrement: Double): Double;
 
     // lists
     function RPUSH(const aListKey: string; aValues: array of string): Integer;
@@ -310,6 +316,7 @@ type
     function Add(ABytes: TBytes): IRedisCommand; overload;
     function Add(AString: string): IRedisCommand; overload;
     function Add(AInteger: NativeInt): IRedisCommand; overload;
+    function Add(ADouble: Double): IRedisCommand; overload;
     function SetCommand(AString: string): IRedisCommand;
     function AddRange(AStrings: array of string): IRedisCommand;
     function ToRedisCommand: TBytes;

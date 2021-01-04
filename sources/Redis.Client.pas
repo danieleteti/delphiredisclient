@@ -48,6 +48,7 @@ type
     function Redis_BytesToString(aValue: TRedisBytes): TRedisString;
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseIntegerResponse(var AValidResponse: boolean): Int64;
+    function ParseFloatResponse(var AValidResponse: boolean): Double;
     // function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
     // deprecated 'Use: ParseArrayResponseNULL';
     function ParseRESPArray: TRedisRESPArray;
@@ -149,6 +150,12 @@ type
     function HGET(const aKey, aField: string; out aValue: string)
       : boolean; overload;
     function HDEL(const aKey: string; aFields: TArray<string>): Integer;
+    function HKEYS(const aKey: string): TRedisArray;
+    function HVALS(const aKey: string): TRedisArray;
+    function HEXISTS(const aKey, aField: string): Boolean;
+    function HLEN(const aKey: string): Integer;
+    function HINCRBY(const aKey, aField: string; const AIncrement: NativeInt): Integer;
+    function HINCRBYFLOAT(const aKey, aField: string; const AIncrement: Double): Double;
     // lists
 {$REGION LIST COMMANDS}
     function RPUSH(const aListKey: string; aValues: array of string): Integer;
@@ -745,6 +752,17 @@ begin
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
+function TRedisClient.HEXISTS(const aKey, aField: string): Boolean;
+var
+  lCommand: IRedisCommand;
+begin
+  lCommand := GetCmdList('HEXISTS');
+  lCommand.Add(aKey);
+  lCommand.Add(aField);
+  FTCPLibInstance.SendCmd(lCommand);
+  Result := ParseIntegerResponse(FValidResponse) = 1;
+end;
+
 function TRedisClient.HGET(const aKey, aField: string;
   out aValue: string): boolean;
 var
@@ -771,6 +789,48 @@ begin
   Pieces.Add(aField);
   FTCPLibInstance.SendCmd(Pieces);
   Result := ParseSimpleStringResponseAsByteNULL;
+end;
+
+function TRedisClient.HINCRBY(const aKey, aField: string; const AIncrement: NativeInt): Integer;
+var
+  lCommand: IRedisCommand;
+begin
+  lCommand := GetCmdList('HINCRBY');
+  lCommand.Add(aKey);
+  lCommand.Add(aField);
+  lCommand.Add(AIncrement);
+  FTCPLibInstance.SendCmd(lCommand);
+  Result := ParseIntegerResponse(FValidResponse);
+end;
+
+function TRedisClient.HINCRBYFLOAT(const aKey, aField: string; const AIncrement: Double): Double;
+var
+  lCommand: IRedisCommand;
+begin
+  lCommand := GetCmdList('HINCRBYFLOAT');
+  lCommand.Add(aKey);
+  lCommand.Add(aField);
+  lCommand.Add(AIncrement);
+  FTCPLibInstance.SendCmd(lCommand);
+  Result := ParseFloatResponse(FValidResponse);
+end;
+
+function TRedisClient.HKEYS(const aKey: string): TRedisArray;
+begin
+  FNextCMD := GetCmdList('HKEYS');
+  FNextCMD.Add(aKey);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseArrayResponseNULL;
+end;
+
+function TRedisClient.HLEN(const aKey: string): Integer;
+var
+  lCommand: IRedisCommand;
+begin
+  lCommand := GetCmdList('HLEN');
+  lCommand.Add(aKey);
+  FTCPLibInstance.SendCmd(lCommand);
+  Result := ParseIntegerResponse(FValidResponse);
 end;
 
 function TRedisClient.HMGET(const aKey: string; aFields: TArray<string>)
@@ -841,6 +901,14 @@ begin
   FNextCMD.Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
+end;
+
+function TRedisClient.HVALS(const aKey: string): TRedisArray;
+begin
+  FNextCMD := GetCmdList('HVALS');
+  FNextCMD.Add(aKey);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseArrayResponseNULL;
 end;
 
 function TRedisClient.INCR(const aKey: string): Int64;
@@ -1158,6 +1226,19 @@ begin
       break;
   end;
   Result := Values;
+end;
+
+function TRedisClient.ParseFloatResponse(var AValidResponse: boolean): Double;
+var
+  LFormatSettings: TFormatSettings;
+  LResponse: string;
+  LResult:Double;
+begin
+  Result := -1;
+
+  LFormatSettings.DecimalSeparator := '.';
+  LResponse := ParseSimpleStringResponse(AValidResponse);
+  TryStrtoFloat(LResponse, Result, LFormatSettings);
 end;
 
 function TRedisClient.ParseIntegerResponse(var AValidResponse: boolean): Int64;

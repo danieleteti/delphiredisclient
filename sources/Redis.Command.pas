@@ -49,6 +49,7 @@ type
     function Add(ABytes: TBytes): IRedisCommand; overload;
     function Add(AString: string): IRedisCommand; overload;
     function Add(AInteger: NativeInt): IRedisCommand; overload;
+    function Add(ADouble: Double): IRedisCommand; overload;
     function SetCommand(AString: string): IRedisCommand; overload;
     function AddRange(AStrings: array of string): IRedisCommand;
     function ToRedisCommand: TBytes;
@@ -71,6 +72,14 @@ end;
 function TRedisCommand.Add(AInteger: NativeInt): IRedisCommand;
 begin
   Result := Add(IntToStr(AInteger));
+end;
+
+function TRedisCommand.Add(ADouble: Double): IRedisCommand;
+var
+ LFormatSettings: TFormatSettings;
+begin
+  LFormatSettings.DecimalSeparator := '.';
+  Result := Add(FloatToStr(ADouble,LFormatSettings));
 end;
 
 function TRedisCommand.AddRange(AStrings: array of string): IRedisCommand;
