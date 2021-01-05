@@ -1232,8 +1232,7 @@ function TRedisClient.ParseFloatResponse(var AValidResponse: boolean): Double;
 var
   LFormatSettings: TFormatSettings;
   LResponse: string;
-  LResult:Double;
-begin
+ begin
   Result := -1;
 
   LFormatSettings.DecimalSeparator := '.';
