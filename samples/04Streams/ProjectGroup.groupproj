@@ -1,0 +1,60 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{325BDBB8-49ED-4BFA-B28C-38745A19028F}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="StreamSamples.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\..\dmvcframework\samples\pushnotifications\sseserver\SSEServer.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\..\dmvcframework\samples\pushnotifications\sseclient\SSEClient.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="StreamSamples">
+        <MSBuild Projects="StreamSamples.dproj"/>
+    </Target>
+    <Target Name="StreamSamples:Clean">
+        <MSBuild Projects="StreamSamples.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="StreamSamples:Make">
+        <MSBuild Projects="StreamSamples.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="SSEServer">
+        <MSBuild Projects="..\..\..\dmvcframework\samples\pushnotifications\sseserver\SSEServer.dproj"/>
+    </Target>
+    <Target Name="SSEServer:Clean">
+        <MSBuild Projects="..\..\..\dmvcframework\samples\pushnotifications\sseserver\SSEServer.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SSEServer:Make">
+        <MSBuild Projects="..\..\..\dmvcframework\samples\pushnotifications\sseserver\SSEServer.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="SSEClient">
+        <MSBuild Projects="..\..\..\dmvcframework\samples\pushnotifications\sseclient\SSEClient.dproj"/>
+    </Target>
+    <Target Name="SSEClient:Clean">
+        <MSBuild Projects="..\..\..\dmvcframework\samples\pushnotifications\sseclient\SSEClient.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SSEClient:Make">
+        <MSBuild Projects="..\..\..\dmvcframework\samples\pushnotifications\sseclient\SSEClient.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="StreamSamples;SSEServer;SSEClient"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="StreamSamples:Clean;SSEServer:Clean;SSEClient:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="StreamSamples:Make;SSEServer:Make;SSEClient:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
