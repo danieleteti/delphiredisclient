@@ -263,6 +263,7 @@ type
 
     // system
     procedure FLUSHDB;
+    procedure FLUSHALL;
     procedure SELECT(const aDBIndex: Integer);
     procedure AUTH(const aPassword: string);
     function MOVE(const aKey: string; const aDB: Byte): boolean;
