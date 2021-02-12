@@ -39,13 +39,10 @@ const
 
 type
   ERedisException = class(Exception)
-
   end;
 
   ERedisConnectionException = class(ERedisException)
-
   end;
-
 
   TRedisConsts = class sealed
   const
@@ -64,8 +61,6 @@ type
   TRedisSorting = (None, Asc, Desc);
   TRedisAggregate = (Sum, Min, Max);
   TRedisMaxLengthType = (Exact, AtLeast);
-
-
   TRedisScoreMode = (WithScores, WithoutScores);
 
   TRedisClientBase = class abstract(TInterfacedObject)
@@ -83,25 +78,18 @@ type
 
   IRedisClient = interface
     ['{566C20FF-7D9F-4DAC-9B0E-A8AA7D29B0B4}']
-
     function &SET(const aKey, aValue: string): boolean; overload;
-
     function &SET(const aKey, aValue: TBytes): boolean; overload;
     function &SET(const aKey: string; aValue: TBytes): boolean; overload;
-    function &SET(const aKey: string; aValue: TBytes; aSecsExpire: UInt64)
-      : boolean; overload;
-    function &SET(const aKey: string; aValue: string; aSecsExpire: UInt64)
-      : boolean; overload;
+    function &SET(const aKey: string; aValue: TBytes; aSecsExpire: UInt64): boolean; overload;
+    function &SET(const aKey: string; aValue: string; aSecsExpire: UInt64): boolean; overload;
     function SETNX(const aKey, aValue: string): boolean; overload;
     function SETNX(const aKey, aValue: TBytes): boolean; overload;
-    function GET(const aKey: string; out aValue: string): boolean; overload;
-      deprecated 'Use GET(aKey: string): TRedisString';
+    function GET(const aKey: string; out aValue: string): boolean; overload; deprecated 'Use GET(aKey: string): TRedisString';
     function GET(const aKey: string): TRedisString; overload;
     function GET_AsBytes(const aKey: string): TRedisBytes;
-    function GET(const aKey: TBytes; out aValue: TBytes): boolean; overload;
-      deprecated 'Use GET(aKey: string): TRedisString';
-    function GET(const aKey: string; out aValue: TBytes): boolean; overload;
-      deprecated 'Use GET(aKey: string): TRedisString';
+    function GET(const aKey: TBytes; out aValue: TBytes): boolean; overload; deprecated 'Use GET(aKey: string): TRedisString';
+    function GET(const aKey: string; out aValue: TBytes): boolean; overload; deprecated 'Use GET(aKey: string): TRedisString';
     function DEL(const aKeys: array of string): Integer;
     function TTL(const aKey: string): Integer;
     function EXISTS(const aKey: string): boolean;
@@ -113,34 +101,26 @@ type
     function PERSIST(const aKey: string): boolean;
     function RANDOMKEY: TRedisString;
     function RENAME(const aKey, aNewKey: string): boolean;
-    function RENAMENX(const aKey, aNewKey: string): boolean;	
+    function RENAMENX(const aKey, aNewKey: string): boolean;
+    function &TYPE(const aKey: string):string;
 
     // strings functions
     function APPEND(const aKey, aValue: TBytes): UInt64; overload;
     function APPEND(const aKey, aValue: string): UInt64; overload;
     function STRLEN(const aKey: string): UInt64;
-    function GETRANGE(const aKey: string;
-      const aStart, aEnd: NativeInt): string;
-    function SETRANGE(const aKey: string; const aOffset: NativeInt;
-      const aValue: string): NativeInt;
+    function GETRANGE(const aKey: string; const aStart, aEnd: NativeInt): string;
+    function SETRANGE(const aKey: string; const aOffset: NativeInt; const aValue: string): NativeInt;
 
     // hash
-    function HSET(const aKey, aField: string; aValue: string): Integer;
-      overload;
-    procedure HMSET(const aKey: string; aFields: TArray<string>;
-      aValues: TArray<string>); overload;
-    procedure HMSET(const aKey: string; aFields: TArray<string>;
-      aValues: TArray<TBytes>); overload;
-    function HSET(const aKey, aField: string; aValue: TBytes): Integer;
-      overload;
-    function HGET(const aKey, aField: string; out aValue: TBytes)
-      : boolean; overload;
-    function HGET(const aKey, aField: string; out aValue: string)
-      : boolean; overload;
+    function HSET(const aKey, aField: string; aValue: string): Integer; overload;
+    procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>); overload;
+    procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>); overload;
+    function HSET(const aKey, aField: string; aValue: TBytes): Integer; overload;
+    function HGET(const aKey, aField: string; out aValue: TBytes): boolean; overload;
+    function HGET(const aKey, aField: string; out aValue: string): boolean; overload;
     function HGET_AsBytes(const aKey, aField: string): TRedisBytes;
     function HGET(const aKey, aField: string): TRedisString; overload;
-    function HMGET(const aKey: string; aFields: TArray<string>)
-      : TRedisArray; overload;
+    function HMGET(const aKey: string; aFields: TArray<string>): TRedisArray; overload;
     function HDEL(const aKey: string; aFields: TArray<string>): Integer;
     function HKEYS(const aKey: string): TRedisArray;
     function HVALS(const aKey: string): TRedisArray;
@@ -159,26 +139,15 @@ type
     function LPOP(const aListKey: string; out Value: string): boolean; overload;
     function LPOP(const aListKey: string): TRedisString; overload;
     function LLEN(const aListKey: string): Integer;
-    procedure LTRIM(const aListKey: string;
-      const aIndexStart, aIndexStop: Integer);
-    function LRANGE(const aListKey: string; aIndexStart, aIndexStop: Integer)
-      : TRedisArray;
-    function RPOPLPUSH(const aRightListKey, aLeftListKey: string;
-      var aPoppedAndPushedElement: string): boolean; overload;
-    function BRPOPLPUSH(const aRightListKey, aLeftListKey: string;
-      var aPoppedAndPushedElement: string; aTimeout: Int32): boolean; overload;
-    function BLPOP(const aKeys: array of string; const aTimeout: Int32;
-      out Value: TArray<string>): boolean; overload;
-      deprecated 'Use BLPOP: TRedisArray';
-    function BLPOP(const aKeys: array of string; const aTimeout: Int32)
-      : TRedisArray; overload;
-    function BRPOP(const aKeys: array of string; const aTimeout: Int32;
-      out Value: TArray<string>): boolean; overload;
-      deprecated 'Use BRPOP: TRedisArray';
-    function BRPOP(const aKeys: array of string; const aTimeout: Int32)
-      : TRedisArray; overload;
-    function LREM(const aListKey: string; const aCount: Integer;
-      const aValue: string): Integer;
+    procedure LTRIM(const aListKey: string; const aIndexStart, aIndexStop: Integer);
+    function LRANGE(const aListKey: string; aIndexStart, aIndexStop: Integer): TRedisArray;
+    function RPOPLPUSH(const aRightListKey, aLeftListKey: string; var aPoppedAndPushedElement: string): boolean; overload;
+    function BRPOPLPUSH(const aRightListKey, aLeftListKey: string; var aPoppedAndPushedElement: string; aTimeout: Int32): boolean; overload;
+    function BLPOP(const aKeys: array of string; const aTimeout: Int32; out Value: TArray<string>): boolean; overload; deprecated 'Use BLPOP: TRedisArray';
+    function BLPOP(const aKeys: array of string; const aTimeout: Int32): TRedisArray; overload;
+    function BRPOP(const aKeys: array of string; const aTimeout: Int32; out Value: TArray<string>): boolean; overload; deprecated 'Use BRPOP: TRedisArray';
+    function BRPOP(const aKeys: array of string; const aTimeout: Int32): TRedisArray; overload;
+    function LREM(const aListKey: string; const aCount: Integer; const aValue: string): Integer;
 
     // sets
     function SADD(const aKey, aValue: TBytes): Integer; overload;
@@ -194,27 +163,19 @@ type
     function SUNIONSTORE(const aDestination: String; const aKeys: array of string): Integer;
 
     // ordered sets
-    function ZADD(const aKey: string; const AScore: Int64;
-      const AMember: string): Integer;
+    function ZADD(const aKey: string; const AScore: Int64; const AMember: string): Integer;
     function ZREM(const aKey: string; const AMember: string): Integer;
     function ZCARD(const aKey: string): Integer;
     function ZCOUNT(const aKey: string; const AMin, AMax: Int64): Integer;
-    function ZRANK(const aKey: string; const AMember: string;
-      out ARank: Int64): boolean;
-    function ZRANGE(const aKey: string; const aStart, AStop: Int64;
-      const aScores: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
-    function ZREVRANGE(const aKey: string; const aStart, AStop: Int64;
-      const aScoreMode: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
+    function ZRANK(const aKey: string; const AMember: string; out ARank: Int64): boolean;
+    function ZRANGE(const aKey: string; const aStart, AStop: Int64; const aScores: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
+    function ZREVRANGE(const aKey: string; const aStart, AStop: Int64; const aScoreMode: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
 //    function ZRANGEWithScore(const aKey: string; const aStart, AStop: Int64)
 //      : TRedisArray;
-    function ZINCRBY(const aKey: string; const AIncrement: Int64;
-      const AMember: string): string;
-    function ZUNIONSTORE(const aDestination: string;
-      const aNumKeys: NativeInt; const aKeys: array of string): Int64; overload;
-    function ZUNIONSTORE(const aDestination: string;
-      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64; overload;
-    function ZUNIONSTORE(const aDestination: string;
-      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64; overload;
+    function ZINCRBY(const aKey: string; const AIncrement: Int64; const AMember: string): string;
+    function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64; overload;
 
     // geo
     /// <summary>
@@ -271,23 +232,21 @@ type
     // raw execute
     function ExecuteAndGetRESPArray(const RedisCommand: IRedisCommand): TRedisRESPArray;
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TRedisArray;
-    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
-      : Int64; overload;
-    function ExecuteWithStringResult(const RedisCommand: IRedisCommand)
-      : TRedisString;
+    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand): Int64; overload;
+    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): TRedisString;
+
     // pubsub
     procedure SUBSCRIBE(const AChannels: array of string;
       aCallback: TProc<string, string>;
       aContinueOnTimeoutCallback: TRedisTimeoutCallback = nil;
       aAfterSubscribe: TRedisAction = nil);
     function PUBLISH(const aChannel: string; aMessage: string): Integer;
+
     // transactions
-    function MULTI(aRedisTansactionProc: TRedisTransactionProc)
-      : TRedisArray; overload;
+    function MULTI(aRedisTansactionProc: TRedisTransactionProc): TRedisArray; overload;
     procedure MULTI; overload;
     function EXEC: TRedisArray;
     procedure WATCH(const aKeys: array of string);
-
     procedure DISCARD;
 
     {$REGION STREAMS}
@@ -303,6 +262,7 @@ type
     procedure Connect;
     procedure Disconnect;
     function InTransaction: boolean;
+
     // client
     procedure ClientSetName(const ClientName: string);
     procedure SetCommandTimeout(const Timeout: Int32);

@@ -58,19 +58,16 @@ type
     procedure CheckResponseType(Expected, Actual: string);
     function ParseSimpleStringResponseAsByteNULL: TRedisBytes;
     function ParseSimpleStringResponseAsStringNULL: TRedisString;
-    function AppendKeyValueParams(const aRedisCommand: IRedisCommand;
-      const Keys, Values: array of string): String;
+    function AppendKeyValueParams(const aRedisCommand: IRedisCommand; const Keys, Values: array of string): String;
   protected
-    procedure BuildZUNIONSTOREDefault(const aDestination: string;
-      const aNumKeys: NativeInt; const aKeys: array of string);
+    procedure BuildZUNIONSTOREDefault(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string);
 
     function GetGEORADIUSCommand(const Key: string;
       const Longitude, Latitude: Extended; const Radius: Extended;
       const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting;
       const Count: Int64): IRedisCommand;
 
-    function POPCommands(const aCommand: string; const aListKey: string)
-      : TRedisString;
+    function POPCommands(const aCommand: string; const aListKey: string): TRedisString;
     procedure CheckResponseError(const aResponse: string);
     function GetCmdList(const Cmd: string): IRedisCommand;
     procedure NextToken(out Msg: string);
@@ -79,14 +76,11 @@ type
     // function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
     // AKeys: array of string; ATimeout: Int32;
     // var AIsValidResponse: boolean): TArray<string>; overload;
-    function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
-      aKeys: array of string; ATimeout: Int32): TRedisArray; overload;
-    constructor Create(TCPLibInstance: IRedisNetLibAdapter;
-      const HostName: string; const Port: Word); overload;
+    function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand; aKeys: array of string; ATimeout: Int32): TRedisArray; overload;
+    constructor Create(TCPLibInstance: IRedisNetLibAdapter; const HostName: string; const Port: Word); overload;
   public
     function Tokenize(const ARedisCommand: string): TArray<string>;
-    constructor Create(const HostName: string = '127.0.0.1';
-      const Port: Word = 6379; const Lib: string = REDIS_NETLIB_INDY); overload;
+    constructor Create(const HostName: string = '127.0.0.1'; const Port: Word = 6379; const Lib: string = REDIS_NETLIB_INDY); overload;
     destructor Destroy; override;
     procedure Connect;
     { *** Methods using the nullable Redis Values *** }
@@ -96,21 +90,16 @@ type
     function HGET(const aKey, aField: string): TRedisString; overload;
     function RPOP(const aListKey: string): TRedisString; overload;
     function LPOP(const aListKey: string): TRedisString; overload;
-    function BRPOP(const aKeys: array of string; const ATimeout: Int32)
-      : TRedisArray; overload;
-    function BLPOP(const aKeys: array of string; const ATimeout: Int32)
-      : TRedisArray; overload;
+    function BRPOP(const aKeys: array of string; const ATimeout: Int32): TRedisArray; overload;
+    function BLPOP(const aKeys: array of string; const ATimeout: Int32): TRedisArray; overload;
     { *********************************************** }
     /// SET key value [EX seconds] [PX milliseconds] [NX|XX]
     function &SET(const aKey, aValue: string): boolean; overload;
     function &SET(const aKey, aValue: TBytes): boolean; overload;
     function &SET(const aKey: string; aValue: TBytes): boolean; overload;
-    function &SET(const aKey: TBytes; aValue: TBytes; ASecsExpire: UInt64)
-      : boolean; overload;
-    function &SET(const aKey: string; aValue: TBytes; ASecsExpire: UInt64)
-      : boolean; overload;
-    function &SET(const aKey: string; aValue: string; ASecsExpire: UInt64)
-      : boolean; overload;
+    function &SET(const aKey: TBytes; aValue: TBytes; ASecsExpire: UInt64): boolean; overload;
+    function &SET(const aKey: string; aValue: TBytes; ASecsExpire: UInt64): boolean; overload;
+    function &SET(const aKey: string; aValue: string; ASecsExpire: UInt64): boolean; overload;
     function SETNX(const aKey, aValue: string): boolean; overload;
     function SETNX(const aKey, aValue: TBytes): boolean; overload;
     function GET(const aKey: string; out aValue: string): boolean; overload;
@@ -125,30 +114,24 @@ type
     function KEYS(const AKeyPattern: string): TRedisArray;
     function EXPIRE(const aKey: string; AExpireInSecond: UInt32): boolean;
     function RENAME(const aKey, aNewKey: string): boolean;
-    function RENAMENX(const aKey, aNewKey: string): boolean;	
+    function RENAMENX(const aKey, aNewKey: string): boolean;
+    function &TYPE(const aKey: string):string;
+
     // string functions
     function APPEND(const aKey, aValue: TBytes): UInt64; overload;
     function APPEND(const aKey, aValue: string): UInt64; overload;
     function STRLEN(const aKey: string): UInt64;
-    function GETRANGE(const aKey: string;
-      const AStart, AEnd: NativeInt): string;
-    function SETRANGE(const aKey: string; const AOffset: NativeInt;
-      const aValue: string): NativeInt;
+    function GETRANGE(const aKey: string; const AStart, AEnd: NativeInt): string;
+    function SETRANGE(const aKey: string; const AOffset: NativeInt; const aValue: string): NativeInt;
 
     // hash
-    function HSET(const aKey, aField: string; aValue: string): Integer;
-      overload;
-    function HSET(const aKey, aField: string; aValue: TBytes): Integer;
-      overload;
-    procedure HMSET(const aKey: string; aFields: TArray<string>;
-      aValues: TArray<string>); overload;
-    procedure HMSET(const aKey: string; aFields: TArray<string>;
-      aValues: TArray<TBytes>); overload;
+    function HSET(const aKey, aField: string; aValue: string): Integer; overload;
+    function HSET(const aKey, aField: string; aValue: TBytes): Integer; overload;
+    procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>); overload;
+    procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>); overload;
     function HMGET(const aKey: string; aFields: TArray<string>): TRedisArray;
-    function HGET(const aKey, aField: string; out aValue: TBytes)
-      : boolean; overload;
-    function HGET(const aKey, aField: string; out aValue: string)
-      : boolean; overload;
+    function HGET(const aKey, aField: string; out aValue: TBytes): boolean; overload;
+    function HGET(const aKey, aField: string; out aValue: string): boolean; overload;
     function HDEL(const aKey: string; aFields: TArray<string>): Integer;
     function HKEYS(const aKey: string): TRedisArray;
     function HVALS(const aKey: string): TRedisArray;
@@ -164,21 +147,14 @@ type
     function LPUSH(const aListKey: string; aValues: array of string): Integer;
     function LPUSHX(const aListKey: string; aValues: array of string): Integer;
     function LPOP(const aListKey: string; out Value: string): boolean; overload;
-    function LRANGE(const aListKey: string; aIndexStart, aIndexStop: Integer)
-      : TRedisArray;
+    function LRANGE(const aListKey: string; aIndexStart, aIndexStop: Integer): TRedisArray;
     function LLEN(const aListKey: string): Integer;
-    procedure LTRIM(const aListKey: string;
-      const aIndexStart, aIndexStop: Integer);
-    function RPOPLPUSH(const ARightListKey, ALeftListKey: string;
-      var APoppedAndPushedElement: string): boolean; overload;
-    function BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
-      var APoppedAndPushedElement: string; ATimeout: Int32): boolean; overload;
-    function BLPOP(const aKeys: array of string; const ATimeout: Int32;
-      out Value: TArray<string>): boolean; overload;
-    function BRPOP(const aKeys: array of string; const ATimeout: Int32;
-      out Value: TArray<string>): boolean; overload;
-    function LREM(const aListKey: string; const ACount: Integer;
-      const aValue: string): Integer;
+    procedure LTRIM(const aListKey: string; const aIndexStart, aIndexStop: Integer);
+    function RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean; overload;
+    function BRPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string; ATimeout: Int32): boolean; overload;
+    function BLPOP(const aKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean; overload;
+    function BRPOP(const aKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean; overload;
+    function LREM(const aListKey: string; const ACount: Integer; const aValue: string): Integer;
 {$ENDREGION}
     // pubsub
 {$REGION PUBSUB}
@@ -202,39 +178,25 @@ type
 {$ENDREGION}
     // ordered sets
 {$REGION ORDEREDSETS}
-    function ZADD(const aKey: string; const AScore: Int64;
-      const AMember: string): Integer;
+    function ZADD(const aKey: string; const AScore: Int64; const AMember: string): Integer;
     function ZREM(const aKey: string; const AMember: string): Integer;
     function ZCARD(const aKey: string): Integer;
     function ZCOUNT(const aKey: string; const AMin, AMax: Int64): Integer;
-    function ZRANK(const aKey: string; const AMember: string;
-      out ARank: Int64): boolean;
-    function ZRANGE(const aKey: string; const AStart, AStop: Int64;
-      const aScoreMode: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
-    function ZREVRANGE(const aKey: string; const AStart, AStop: Int64;
-      const aScoreMode: TRedisScoreMode = TRedisScoreMode.WithoutScores)
-      : TRedisArray;
+    function ZRANK(const aKey: string; const AMember: string; out ARank: Int64): boolean;
+    function ZRANGE(const aKey: string; const AStart, AStop: Int64; const aScoreMode: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
+    function ZREVRANGE(const aKey: string; const AStart, AStop: Int64; const aScoreMode: TRedisScoreMode = TRedisScoreMode.WithoutScores): TRedisArray;
     // function ZRANGEWithScore(const aKey: string; const AStart, AStop: Int64)
     // : TRedisArray;
-    function ZINCRBY(const aKey: string; const AIncrement: Int64;
-      const AMember: string): string;
-    function ZUNIONSTORE(const aDestination: string;
-      const aNumKeys: NativeInt; const aKeys: array of string): Int64; overload;
-    function ZUNIONSTORE(const aDestination: string;
-      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64; overload;
-    function ZUNIONSTORE(const aDestination: string;
-      const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer;
-      const aAggregate: TRedisAggregate): Int64; overload;
+    function ZINCRBY(const aKey: string; const AIncrement: Int64; const AMember: string): string;
+    function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64; overload;
+    function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64; overload;
 {$ENDREGION}
     // geo REDIS 3.2
-    function GEOADD(const Key: string; const Latitude, Longitude: Extended;
-      Member: string): Integer;
-    function GEODIST(const Key: string; const Member1, Member2: string;
-      const &Unit: TRedisGeoUnit): TRedisString;
-    function GEOHASH(const Key: string; const Members: array of string)
-      : TRedisArray;
-    function GEOPOS(const Key: string; const Members: array of string)
-      : TRedisMatrix;
+    function GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string): Integer;
+    function GEODIST(const Key: string; const Member1, Member2: string; const &Unit: TRedisGeoUnit): TRedisString;
+    function GEOHASH(const Key: string; const Members: array of string): TRedisArray;
+    function GEOPOS(const Key: string; const Members: array of string): TRedisMatrix;
     function GEORADIUS(const Key: string; const Longitude, Latitude: Extended;
       const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
       const Sorting: TRedisSorting = TRedisSorting.None;
@@ -246,16 +208,12 @@ type
       const Count: Int64 = -1): TRedisMatrix;
 
     {$REGION STREAMS}
-      function XADD(const aStreamName: String; const MaxLength: UInt64;
-        const MaxLengthType: TRedisMaxLengthType; const Keys,
-        Values: array of string; const ID: UInt64 = 0): String; overload;
-      function XADD(const aStreamName: String; const Keys,
-        Values: array of string; const ID: UInt64 = 0): String; overload;
+      function XADD(const aStreamName: String; const MaxLength: UInt64; const MaxLengthType: TRedisMaxLengthType; const Keys, Values: array of string; const ID: UInt64 = 0): String; overload;
+      function XADD(const aStreamName: String; const Keys, Values: array of string; const ID: UInt64 = 0): String; overload;
     {$ENDREGION}
 
     // lua scripts
-    function EVAL(const AScript: string; aKeys: array of string;
-      aValues: array of string): Integer;
+    function EVAL(const AScript: string; aKeys: array of string; aValues: array of string): Integer;
     // system
     procedure FLUSHDB;
     procedure FLUSHALL;
@@ -267,8 +225,7 @@ type
     // non system
     function InTransaction: boolean;
     // transations
-    function MULTI(ARedisTansactionProc: TRedisTransactionProc)
-      : TRedisArray; overload;
+    function MULTI(ARedisTansactionProc: TRedisTransactionProc): TRedisArray; overload;
     procedure MULTI; overload;
     function EXEC: TRedisArray;
     procedure WATCH(const aKeys: array of string);
@@ -276,14 +233,10 @@ type
     // raw execute
     function ExecuteAndGetRESPArray(const RedisCommand: IRedisCommand): TRedisRESPArray;
     function ExecuteAndGetArray(const RedisCommand: IRedisCommand): TRedisArray;
-    function ExecuteAndGetArrayNULL(const RedisCommand: IRedisCommand)
-      : TRedisArray;
-    function ExecuteAndGetMatrix(const RedisCommand: IRedisCommand)
-      : TRedisMatrix;
-    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand)
-      : Int64; overload;
-    function ExecuteWithStringResult(const RedisCommand: IRedisCommand)
-      : TRedisString;
+    function ExecuteAndGetArrayNULL(const RedisCommand: IRedisCommand): TRedisArray;
+    function ExecuteAndGetMatrix(const RedisCommand: IRedisCommand): TRedisMatrix;
+    function ExecuteWithIntegerResult(const RedisCommand: IRedisCommand): Int64; overload;
+    function ExecuteWithStringResult(const RedisCommand: IRedisCommand): TRedisString;
     procedure Disconnect;
     procedure SetCommandTimeout(const Timeout: Int32);
     // client
@@ -291,9 +244,7 @@ type
     function Clone: IRedisClient;
   end;
 
-function NewRedisClient(const AHostName: string = 'localhost';
-  const APort: Word = 6379; const ALibName: string = REDIS_NETLIB_INDY)
-  : IRedisClient;
+function NewRedisClient(const AHostName: string = 'localhost'; const APort: Word = 6379; const ALibName: string = REDIS_NETLIB_INDY): IRedisClient;
 function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 
 implementation
@@ -301,8 +252,7 @@ implementation
 uses Redis.NetLib.Factory;
 
 const
-  REDIS_GEO_UNIT_STRING: array [TRedisGeoUnit.Meters .. TRedisGeoUnit.Feet]
-    of string = ('m', 'km', 'mi', 'ft');
+  REDIS_GEO_UNIT_STRING: array [TRedisGeoUnit.Meters .. TRedisGeoUnit.Feet] of string = ('m', 'km', 'mi', 'ft');
   REDIS_AGGREGATE: array [TRedisAggregate.Sum .. TRedisAggregate.Max] of string = ('SUM', 'MIN', 'MAX');
 
   { TRedisClient }
@@ -376,8 +326,7 @@ begin
   ParseSimpleStringResponse(FIsValidResponse);
 end;
 
-function TRedisClient.BLPOP(const aKeys: array of string; const ATimeout: Int32;
-  out Value: TArray<string>): boolean;
+function TRedisClient.BLPOP(const aKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
 var
   lRes: TRedisArray;
 begin
@@ -391,15 +340,13 @@ begin
   // Result := FIsValidResponse;
 end;
 
-function TRedisClient.BLPOP(const aKeys: array of string; const ATimeout: Int32)
-  : TRedisArray;
+function TRedisClient.BLPOP(const aKeys: array of string; const ATimeout: Int32): TRedisArray;
 begin
   FNextCMD := GetCmdList('BLPOP');
   Result := InternalBlockingLeftOrRightPOP(FNextCMD, aKeys, ATimeout);
 end;
 
-function TRedisClient.BRPOP(const aKeys: array of string; const ATimeout: Int32;
-  out Value: TArray<string>): boolean;
+function TRedisClient.BRPOP(const aKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
 var
   lRes: TRedisArray;
 begin
@@ -443,8 +390,7 @@ begin
   FTCPLibInstance.Connect(FHostName, FPort);
 end;
 
-constructor TRedisClient.Create(const HostName: string; const Port: Word;
-  const Lib: string);
+constructor TRedisClient.Create(const HostName: string; const Port: Word; const Lib: string);
 var
   TCPLibInstance: IRedisNetLibAdapter;
 begin
@@ -454,8 +400,7 @@ begin
   FFormatSettings.DecimalSeparator := '.';
 end;
 
-constructor TRedisClient.Create(TCPLibInstance: IRedisNetLibAdapter;
-  const HostName: string; const Port: Word);
+constructor TRedisClient.Create(TCPLibInstance: IRedisNetLibAdapter; const HostName: string; const Port: Word);
 begin
   inherited Create;
   FTCPLibInstance := TCPLibInstance;
@@ -499,15 +444,13 @@ begin
   end;
 end;
 
-function TRedisClient.ExecuteWithIntegerResult(const RedisCommand
-  : IRedisCommand): Int64;
+function TRedisClient.ExecuteWithIntegerResult(const RedisCommand: IRedisCommand): Int64;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
-function TRedisClient.ExecuteWithStringResult(const RedisCommand: IRedisCommand)
-  : TRedisString;
+function TRedisClient.ExecuteWithStringResult(const RedisCommand: IRedisCommand): TRedisString;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseSimpleStringResponseAsStringNULL;
@@ -521,11 +464,12 @@ begin
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
 
-function TRedisClient.EXPIRE(const aKey: string;
-  AExpireInSecond: UInt32): boolean;
+function TRedisClient.EXPIRE(const aKey: string; AExpireInSecond: UInt32): boolean;
 begin
-  FTCPLibInstance.Write(GetCmdList('EXPIRE').Add(aKey)
-    .Add(AExpireInSecond.ToString).ToRedisCommand);
+  FTCPLibInstance
+  .Write(GetCmdList('EXPIRE')
+  .Add(aKey)
+  .Add(AExpireInSecond.ToString).ToRedisCommand);
 
   {
     1 if the timeout was set.
@@ -558,8 +502,17 @@ begin
   Result := lRes.HasValue;
 end;
 
-function TRedisClient.EVAL(const AScript: string;
-  aKeys, aValues: array of string): Integer;
+function TRedisClient.&TYPE(const aKey: string): string;
+var
+  lRes: TRedisString;
+begin
+  FNextCMD := GetCmdList('TYPE');
+  FNextCMD.Add(aKey);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseSimpleStringResponse(FIsValidResponse);
+end;
+
+function TRedisClient.EVAL(const AScript: string; aKeys, aValues: array of string): Integer;
 var
   lCmd: IRedisCommand;
   lParamsCount: Integer;
@@ -594,8 +547,7 @@ begin
     raise ERedisException.Create('Transaction failed');
 end;
 
-function TRedisClient.ExecuteAndGetArray(const RedisCommand: IRedisCommand)
-  : TRedisArray;
+function TRedisClient.ExecuteAndGetArray(const RedisCommand: IRedisCommand): TRedisArray;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseArrayResponseNULL;
@@ -606,8 +558,7 @@ begin
   // raise ERedisException.Create('Not valid response');
 end;
 
-function TRedisClient.ExecuteAndGetArrayNULL(const RedisCommand: IRedisCommand)
-  : TRedisArray;
+function TRedisClient.ExecuteAndGetArrayNULL(const RedisCommand: IRedisCommand): TRedisArray;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseArrayResponseNULL;
@@ -615,8 +566,7 @@ begin
     Exit;
 end;
 
-function TRedisClient.ExecuteAndGetMatrix(const RedisCommand: IRedisCommand)
-  : TRedisMatrix;
+function TRedisClient.ExecuteAndGetMatrix(const RedisCommand: IRedisCommand): TRedisMatrix;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseMatrixResponse;
@@ -624,8 +574,7 @@ begin
     Exit;
 end;
 
-function TRedisClient.ExecuteAndGetRESPArray(
-  const RedisCommand: IRedisCommand): TRedisRESPArray;
+function TRedisClient.ExecuteAndGetRESPArray(const RedisCommand: IRedisCommand): TRedisRESPArray;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseRESPArray;
@@ -677,9 +626,7 @@ begin
   Result.SetCommand(Cmd);
 end;
 
-function TRedisClient.GetGEORADIUSCommand(const Key: string;
-  const Longitude, Latitude, Radius: Extended; const &Unit: TRedisGeoUnit;
-  const Sorting: TRedisSorting; const Count: Int64): IRedisCommand;
+function TRedisClient.GetGEORADIUSCommand(const Key: string; const Longitude, Latitude, Radius: Extended; const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting; const Count: Int64): IRedisCommand;
 var
   lCmd: IRedisCommand;
 begin
@@ -701,8 +648,7 @@ begin
   Result := lCmd;
 end;
 
-function TRedisClient.GETRANGE(const aKey: string;
-  const AStart, AEnd: NativeInt): string;
+function TRedisClient.GETRANGE(const aKey: string; const AStart, AEnd: NativeInt): string;
 begin
   FNextCMD := GetCmdList('GETRANGE').Add(aKey).Add(AStart).Add(AEnd);
   FTCPLibInstance.SendCmd(FNextCMD);
@@ -724,8 +670,7 @@ begin
   Result := HSET(aKey, aField, BytesOfUnicode(aValue));
 end;
 
-function TRedisClient.HGET(const aKey, aField: string;
-  out aValue: TBytes): boolean;
+function TRedisClient.HGET(const aKey, aField: string; out aValue: TBytes): boolean;
 var
   Pieces: IRedisCommand;
   lRes: TRedisNullable<TBytes>;
@@ -833,8 +778,7 @@ begin
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
-function TRedisClient.HMGET(const aKey: string; aFields: TArray<string>)
-  : TRedisArray;
+function TRedisClient.HMGET(const aKey: string; aFields: TArray<string>): TRedisArray;
 var
   Pieces: IRedisCommand;
   I: Integer;
@@ -849,8 +793,7 @@ begin
   Result := ParseArrayResponseNULL;
 end;
 
-procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>;
-  aValues: TArray<TBytes>);
+procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>);
 var
   I: Integer;
 begin
@@ -871,8 +814,7 @@ begin
     CheckResponseType('OK', ParseSimpleStringResponseAsStringNULL.Value);
 end;
 
-procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>;
-  aValues: TArray<string>);
+procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>);
 var
   I: Integer;
 begin
@@ -927,8 +869,7 @@ end;
 // Result := ParseArrayResponse(AIsValidResponse);
 // end;
 
-function TRedisClient.InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
-  aKeys: array of string; ATimeout: Int32): TRedisArray;
+function TRedisClient.InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand; aKeys: array of string; ATimeout: Int32): TRedisArray;
 begin
   NextCMD.AddRange(aKeys);
   NextCMD.Add(ATimeout.ToString);
@@ -936,8 +877,7 @@ begin
   Result := ParseArrayResponseNULL;
 end;
 
-procedure TRedisClient.InternalParseRESPArray(const aRESPArray: TRedisRESPArray;
-  const aSize: Int64);
+procedure TRedisClient.InternalParseRESPArray(const aRESPArray: TRedisRESPArray; const aSize: Int64);
 var
   lTokenType: Char;
   lArrLen: Int64;
@@ -1020,8 +960,7 @@ begin
   Result := POPCommands('LPOP', aListKey);
 end;
 
-function TRedisClient.LPUSH(const aListKey: string;
-  aValues: array of string): Integer;
+function TRedisClient.LPUSH(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('LPUSH');
   FNextCMD.Add(aListKey);
@@ -1030,8 +969,7 @@ begin
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
-function TRedisClient.LPUSHX(const aListKey: string;
-  aValues: array of string): Integer;
+function TRedisClient.LPUSHX(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('LPUSHX');
   FNextCMD.Add(aListKey);
@@ -1040,8 +978,7 @@ begin
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
-function TRedisClient.LRANGE(const aListKey: string;
-  aIndexStart, aIndexStop: Integer): TRedisArray;
+function TRedisClient.LRANGE(const aListKey: string; aIndexStart, aIndexStop: Integer): TRedisArray;
 begin
   FNextCMD := GetCmdList('LRANGE');
   FNextCMD.Add(aListKey);
@@ -1051,8 +988,7 @@ begin
   Result := ParseArrayResponseNULL;
 end;
 
-function TRedisClient.LREM(const aListKey: string; const ACount: Integer;
-  const aValue: string): Integer;
+function TRedisClient.LREM(const aListKey: string; const ACount: Integer; const aValue: string): Integer;
 begin
   FNextCMD := GetCmdList('LREM');
   FNextCMD.Add(aListKey);
@@ -1062,8 +998,7 @@ begin
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
-procedure TRedisClient.LTRIM(const aListKey: string;
-  const aIndexStart, aIndexStop: Integer);
+procedure TRedisClient.LTRIM(const aListKey: string; const aIndexStart, aIndexStop: Integer);
 var
   lResult: string;
 begin
@@ -1096,8 +1031,7 @@ begin
   FInTransaction := True;
 end;
 
-function TRedisClient.MULTI(ARedisTansactionProc: TRedisTransactionProc)
-  : TRedisArray;
+function TRedisClient.MULTI(ARedisTansactionProc: TRedisTransactionProc): TRedisArray;
 begin
   FNextCMD := GetCmdList('MULTI');
   try
@@ -1378,8 +1312,7 @@ begin
   end;
 end;
 
-function TRedisClient.ParseSimpleStringResponse(var AValidResponse
-  : boolean): string;
+function TRedisClient.ParseSimpleStringResponse(var AValidResponse: boolean): string;
 var
   lRes: TRedisBytes;
 begin
@@ -1455,8 +1388,7 @@ begin
   Result := Redis_BytesToString(ParseSimpleStringResponseAsByteNULL);
 end;
 
-function TRedisClient.PUBLISH(const AChannel: string; AMessage: string)
-  : Integer;
+function TRedisClient.PUBLISH(const AChannel: string; AMessage: string): Integer;
 begin
   FNextCMD := GetCmdList('PUBLISH');
   FNextCMD.Add(AChannel);
@@ -1487,15 +1419,13 @@ begin
   Value := ParseSimpleStringResponse(Result);
 end;
 
-function TRedisClient.BRPOP(const aKeys: array of string; const ATimeout: Int32)
-  : TRedisArray;
+function TRedisClient.BRPOP(const aKeys: array of string; const ATimeout: Int32): TRedisArray;
 begin
   FNextCMD := GetCmdList('BRPOP');
   Result := InternalBlockingLeftOrRightPOP(FNextCMD, aKeys, ATimeout);
 end;
 
-function TRedisClient.BRPOPLPUSH(const ARightListKey, ALeftListKey: string;
-  var APoppedAndPushedElement: string; ATimeout: Int32): boolean;
+function TRedisClient.BRPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string; ATimeout: Int32): boolean;
 var
   lValue: string;
 begin
@@ -1515,8 +1445,7 @@ begin
   end;
 end;
 
-procedure TRedisClient.BuildZUNIONSTOREDefault(const aDestination: string;
-  const aNumKeys: NativeInt; const aKeys: array of string);
+procedure TRedisClient.BuildZUNIONSTOREDefault(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string);
 var
   lKey: string;
 begin
@@ -1533,8 +1462,7 @@ begin
   Result := POPCommands('RPOP', aListKey);
 end;
 
-function TRedisClient.RPOPLPUSH(const ARightListKey, ALeftListKey: string;
-  var APoppedAndPushedElement: string): boolean;
+function TRedisClient.RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
 begin
   FNextCMD := GetCmdList('RPOPLPUSH');
   FNextCMD.Add(ARightListKey);
@@ -1544,8 +1472,7 @@ begin
   Result := FValidResponse;
 end;
 
-function TRedisClient.RPUSH(const aListKey: string;
-  aValues: array of string): Integer;
+function TRedisClient.RPUSH(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('RPUSH');
   FNextCMD.Add(aListKey);
@@ -1554,8 +1481,7 @@ begin
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
-function TRedisClient.RPUSHX(const aListKey: string;
-  aValues: array of string): Integer;
+function TRedisClient.RPUSHX(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('RPUSHX');
   FNextCMD.Add(aListKey);
@@ -1579,14 +1505,12 @@ begin
   Result := SETNX(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
 end;
 
-function TRedisClient.&SET(const aKey: string; aValue: TBytes;
-  ASecsExpire: UInt64): boolean;
+function TRedisClient.&SET(const aKey: string; aValue: TBytes; ASecsExpire: UInt64): boolean;
 begin
   Result := &SET(BytesOfUnicode(aKey), aValue, ASecsExpire);
 end;
 
-function TRedisClient.&SET(const aKey: TBytes; aValue: TBytes;
-  ASecsExpire: UInt64): boolean;
+function TRedisClient.&SET(const aKey: TBytes; aValue: TBytes; ASecsExpire: UInt64): boolean;
 begin
   FNextCMD := GetCmdList('SET');
   FNextCMD.Add(aKey);
@@ -1597,8 +1521,7 @@ begin
   Result := ParseSimpleStringResponseAsByteNULL.HasValue
 end;
 
-function TRedisClient.&SET(const aKey: string; aValue: string;
-  ASecsExpire: UInt64): boolean;
+function TRedisClient.&SET(const aKey: string; aValue: string; ASecsExpire: UInt64): boolean;
 begin
   Result := &SET(BytesOfUnicode(aKey), BytesOfUnicode(aValue), ASecsExpire);
 end;
@@ -1612,8 +1535,7 @@ begin
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
 
-function TRedisClient.SETRANGE(const aKey: string; const AOffset: NativeInt;
-  const aValue: string): NativeInt;
+function TRedisClient.SETRANGE(const aKey: string; const AOffset: NativeInt; const aValue: string): NativeInt;
 begin
   FNextCMD := GetCmdList('SETRANGE').Add(aKey).Add(AOffset).Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
@@ -1658,10 +1580,7 @@ begin
   Result := ParseIntegerResponse(FValidResponse);
 end;
 
-procedure TRedisClient.SUBSCRIBE(const AChannels: array of string;
-  aCallback: TProc<string, string>;
-  aContinueOnTimeoutCallback: TRedisTimeoutCallback = nil;
-  aAfterSubscribe: TRedisAction = nil);
+procedure TRedisClient.SUBSCRIBE(const AChannels: array of string; aCallback: TProc<string, string>; aContinueOnTimeoutCallback: TRedisTimeoutCallback = nil; aAfterSubscribe: TRedisAction = nil);
 var
   I: Integer;
   lChannel, lValue: string;
@@ -1726,8 +1645,7 @@ begin
   Result := ParseArrayResponseNULL;
 end;
 
-function TRedisClient.SUNIONSTORE(const aDestination: string;
-  const aKeys: array of string): Integer;
+function TRedisClient.SUNIONSTORE(const aDestination: string; const aKeys: array of string): Integer;
 begin
   FNextCMD := GetCmdList('SUNIONSTORE').Add(aDestination).AddRange(aKeys);
   FTCPLibInstance.SendCmd(FNextCMD);
@@ -1836,9 +1754,7 @@ begin
   ExecuteWithStringResult(FNextCMD); // ALWAYS 'OK' OR EXCEPTION
 end;
 
-function TRedisClient.XADD(const aStreamName: String; const MaxLength: UInt64;
-  const MaxLengthType: TRedisMaxLengthType; const Keys,
-  Values: array of string; const ID: UInt64): String;
+function TRedisClient.XADD(const aStreamName: String; const MaxLength: UInt64; const MaxLengthType: TRedisMaxLengthType; const Keys, Values: array of string; const ID: UInt64): String;
 var
   lCmd: IRedisCommand;
 const
@@ -1867,8 +1783,7 @@ begin
   Result := ExecuteWithStringResult(lCmd);
 end;
 
-function TRedisClient.AppendKeyValueParams(const aRedisCommand: IRedisCommand; const Keys,
-  Values: array of string): String;
+function TRedisClient.AppendKeyValueParams(const aRedisCommand: IRedisCommand; const Keys, Values: array of string): String;
 var
   I: Integer;
 begin
@@ -1879,8 +1794,7 @@ begin
   end;
 end;
 
-function TRedisClient.XADD(const aStreamName: String; const Keys,
-  Values: array of string; const ID: UInt64 = 0): String;
+function TRedisClient.XADD(const aStreamName: String; const Keys, Values: array of string; const ID: UInt64 = 0): String;
 var
   lCmd: IRedisCommand;
 begin
@@ -1899,8 +1813,7 @@ begin
   Result := ExecuteWithStringResult(lCmd);
 end;
 
-function TRedisClient.ZADD(const aKey: string; const AScore: Int64;
-  const AMember: string): Integer;
+function TRedisClient.ZADD(const aKey: string; const AScore: Int64; const AMember: string): Integer;
 begin
   FNextCMD := GetCmdList('ZADD');
   FNextCMD.Add(aKey).Add(AScore.ToString).Add(AMember);
@@ -1913,24 +1826,21 @@ begin
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
-function TRedisClient.ZCOUNT(const aKey: string;
-  const AMin, AMax: Int64): Integer;
+function TRedisClient.ZCOUNT(const aKey: string; const AMin, AMax: Int64): Integer;
 begin
   FNextCMD := GetCmdList('ZCOUNT');
   FNextCMD.Add(aKey).Add(AMin.ToString).Add(AMax.ToString);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
-function TRedisClient.ZINCRBY(const aKey: string; const AIncrement: Int64;
-  const AMember: string): string;
+function TRedisClient.ZINCRBY(const aKey: string; const AIncrement: Int64; const AMember: string): string;
 begin
   FNextCMD := GetCmdList('ZINCRBY');
   FNextCMD.Add(aKey).Add(AIncrement.ToString).Add(AMember);
   Result := ExecuteWithStringResult(FNextCMD);
 end;
 
-function TRedisClient.ZRANGE(const aKey: string; const AStart, AStop: Int64; const aScoreMode: TRedisScoreMode)
-  : TRedisArray;
+function TRedisClient.ZRANGE(const aKey: string; const AStart, AStop: Int64; const aScoreMode: TRedisScoreMode): TRedisArray;
 begin
   FNextCMD := GetCmdList('ZRANGE');
   FNextCMD.Add(aKey).Add(AStart.ToString).Add(AStop.ToString);
@@ -1949,8 +1859,7 @@ end;
 // Result := ExecuteAndGetArrayNULL(FNextCMD);
 // end;
 
-function TRedisClient.ZRANK(const aKey: string; const AMember: string;
-  out ARank: Int64): boolean;
+function TRedisClient.ZRANK(const aKey: string; const AMember: string; out ARank: Int64): boolean;
 begin
   FNextCMD := GetCmdList('ZRANK');
   FNextCMD.Add(aKey).Add(AMember);
@@ -1965,8 +1874,7 @@ begin
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
-function TRedisClient.ZREVRANGE(const aKey: string; const AStart,
-  AStop: Int64; const aScoreMode: TRedisScoreMode): TRedisArray;
+function TRedisClient.ZREVRANGE(const aKey: string; const AStart, AStop: Int64; const aScoreMode: TRedisScoreMode): TRedisArray;
 begin
   FNextCMD := GetCmdList('ZREVRANGE');
   FNextCMD.Add(aKey).Add(AStart.ToString).Add(AStop.ToString);
@@ -1977,9 +1885,7 @@ begin
   Result := ExecuteAndGetArrayNULL(FNextCMD);
 end;
 
-function TRedisClient.ZUNIONSTORE(const aDestination: string;
-  const aNumKeys: NativeInt; const aKeys: array of string;
-  const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64;
+function TRedisClient.ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64;
 var
   lWeight: Integer;
 begin
@@ -1993,9 +1899,7 @@ begin
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
-function TRedisClient.ZUNIONSTORE(const aDestination: string;
-  const aNumKeys: NativeInt; const aKeys: array of string;
-  const aWeights: array of Integer): Int64;
+function TRedisClient.ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64;
 var
   lWeight: NativeInt;
 begin
@@ -2008,15 +1912,13 @@ begin
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
-function TRedisClient.ZUNIONSTORE(const aDestination: string;
-  const aNumKeys: NativeInt; const aKeys: array of string): Int64;
+function TRedisClient.ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string): Int64;
 begin
   BuildZUNIONSTOREDefault(aDestination, aNumKeys, aKeys);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
 
-function NewRedisClient(const AHostName: string; const APort: Word;
-  const ALibName: string): IRedisClient;
+function NewRedisClient(const AHostName: string; const APort: Word; const ALibName: string): IRedisClient;
 var
   TCPLibInstance: IRedisNetLibAdapter;
 begin
@@ -2039,8 +1941,7 @@ begin
   TRedisCommand(Result).SetCommand(RedisCommandString);
 end;
 
-function TRedisClient.GEOADD(const Key: string;
-  const Latitude, Longitude: Extended; Member: string): Integer;
+function TRedisClient.GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string): Integer;
 var
   lCmd: IRedisCommand;
 begin
@@ -2052,8 +1953,7 @@ begin
   Result := ExecuteWithIntegerResult(lCmd);
 end;
 
-function TRedisClient.GEODIST(const Key, Member1, Member2: string;
-  const &Unit: TRedisGeoUnit): TRedisString;
+function TRedisClient.GEODIST(const Key, Member1, Member2: string; const &Unit: TRedisGeoUnit): TRedisString;
 var
   lCmd: IRedisCommand;
 begin
@@ -2065,8 +1965,7 @@ begin
   Result := ExecuteWithStringResult(lCmd);
 end;
 
-function TRedisClient.GEOHASH(const Key: string; const Members: array of string)
-  : TRedisArray;
+function TRedisClient.GEOHASH(const Key: string; const Members: array of string): TRedisArray;
 var
   lCmd: IRedisCommand;
   lMember: string;
@@ -2080,8 +1979,7 @@ begin
   Result := ExecuteAndGetArrayNULL(lCmd);
 end;
 
-function TRedisClient.GEOPOS(const Key: string; const Members: array of string)
-  : TRedisMatrix;
+function TRedisClient.GEOPOS(const Key: string; const Members: array of string): TRedisMatrix;
 var
   lCmd: IRedisCommand;
   lMember: string;
@@ -2097,8 +1995,7 @@ end;
 
 function TRedisClient.GEORADIUS(const Key: string;
   const Longitude, Latitude: Extended; const Radius: Extended;
-  const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting; const Count: Int64)
-  : TRedisArray;
+  const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting; const Count: Int64): TRedisArray;
 var
   lCmd: IRedisCommand;
 begin
@@ -2110,8 +2007,7 @@ end;
 function TRedisClient.GEORADIUS_WITHDIST(const Key: string;
   const Longitude, Latitude: Extended; const Radius: Extended;
   const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
-  const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1)
-  : TRedisMatrix;
+  const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisMatrix;
 var
   lCmd: IRedisCommand;
 begin
