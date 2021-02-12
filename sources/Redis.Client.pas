@@ -503,8 +503,6 @@ begin
 end;
 
 function TRedisClient.&TYPE(const aKey: string): string;
-var
-  lRes: TRedisString;
 begin
   FNextCMD := GetCmdList('TYPE');
   FNextCMD.Add(aKey);
