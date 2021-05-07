@@ -75,6 +75,7 @@ type
     procedure TestINCR_DECR;
     procedure TestEXPIRE;
     procedure TestRENAME;
+    procedure TestTYPE;
     procedure TestDelete;
     procedure TestRPUSH_RPOP;
     procedure TestRPUSHX_LPUSHX;
@@ -1038,6 +1039,19 @@ begin
   FRedis.RENAME('myrename', 'myrename2');
   lRes := FRedis.GET('myrename2');
   CheckEquals('1234', lRes);
+end;
+
+procedure TestRedisClient.TestTYPE;
+var
+  lType: string;
+begin
+  FRedis.&SET('mystring', '1234');
+  lType := FRedis.&TYPE('mystring');
+  CheckEquals('string', lType);
+
+  FRedis.HSET('myhash','field', '1234');
+  lType := FRedis.&TYPE('myhash');
+  CheckEquals('hash', lType);
 end;
 
 procedure TestRedisClient.TestRPOPLPUSH;
