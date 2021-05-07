@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2017 Daniele Teti
+// Copyright (c) 2015-2021 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //

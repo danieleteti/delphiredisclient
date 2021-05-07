@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2017 Daniele Teti
+// Copyright (c) 2015-2021 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -1622,7 +1622,7 @@ end;
 
 function TRedisClient.SISMEMBER(const aKey, aValue: string): Integer;
 begin
-  Result := SREM(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
+  Result := SISMEMBER(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
 end;
 
 function TRedisClient.SISMEMBER(const aKey, aValue: TBytes): Integer;

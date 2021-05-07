@@ -53,3 +53,5 @@ __history/
 *.dcu
 /tests/bin/dunit.ini
 /tests/RedisClientTests.res
+*.stat 
+*.res 
