@@ -39,7 +39,7 @@ uses
   TestFramework, System.Variants, IdTCPClient, Winapi.Windows, Vcl.Dialogs,
   Vcl.Forms, IdTCPConnection, Vcl.Controls, System.Classes, System.SysUtils,
   IdComponent, Winapi.Messages, IdBaseComponent, Vcl.Graphics, Vcl.StdCtrls,
-  Redis.Client, Redis.Commons, Redis.Values;
+  Redis.Client, Redis.Commons, Redis.Values, System.Math;
 
 const
   // REDIS_SERVER_ADDRESS = '192.168.1.102';
@@ -160,6 +160,8 @@ var
   lCity: string;
   lFS: TFormatSettings;
   lCityCount: Integer;
+  lStrLat: Extended;
+  lStrLon: Extended;
 const
   CITY = 1;
   LAT = 2;
@@ -184,11 +186,13 @@ begin
       lPieces := lLine.Split([',']);
       if Length(lPieces) <> 11 then
         Continue;
-      lLat := lPieces[LAT].Trim.DeQuotedString('"');
       lLon := lPieces[LON].Trim.DeQuotedString('"');
+      lLat := lPieces[LAT].Trim.DeQuotedString('"');
       lCity := lPieces[CITY].Trim.DeQuotedString('"').ToLower;
+      lStrLat := RoundTo(StrToFloat(lLat, lFS), -6);
+      lStrLon := RoundTo(StrToFloat(lLon, lFS), -6);
       try
-        FRedis.GEOADD(KEY_GEODATA, StrToFloat(lLat, lFS), StrToFloat(lLon, lFS), lCity);
+        FRedis.GEOADD(KEY_GEODATA, lStrLon, lStrLat, lCity);
         Inc(lCityCount);
       except
         // ignore invalid coords in the file
@@ -513,25 +517,28 @@ end;
 procedure TestRedisClient.TestGEOPOS;
 var
   lMatrixResp: TRedisMatrix;
+  LFormatSettings: TFormatSettings;
 begin
+  LFormatSettings.DecimalSeparator := '.';
+
   LoadGeoData;
 
   lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['rome']);
   CheckFalse(lMatrixResp.IsNull);
   CheckFalse(lMatrixResp.Items[0].IsNull);
-  CheckEqualsString('41.90000206232070923', lMatrixResp.Items[0].Items[0]);
-  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[1]);
+  CheckEqualsString('41.90000206232070923', FloatToStr(RoundTo(StrToFloat(lMatrixResp.Items[0].Items[1], LFormatSettings), -6), LFormatSettings));
+  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[0]);
 
   lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['rome', 'milan']);
   CheckFalse(lMatrixResp.IsNull);
   CheckFalse(lMatrixResp.Items[0].IsNull);
   CheckFalse(lMatrixResp.Items[1].IsNull);
 
-  CheckEqualsString('41.90000206232070923', lMatrixResp.Items[0].Items[0]);
-  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[1]);
+  CheckEqualsString('41.90000206232070923', lMatrixResp.Items[0].Items[1]);
+  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[0]);
 
-  CheckEqualsString('45.46119779348373413', lMatrixResp.Items[1].Items[0]);
-  CheckEqualsString('9.1878002271457504', lMatrixResp.Items[1].Items[1]);
+  CheckEqualsString('45.46119779348373413', lMatrixResp.Items[1].Items[1]);
+  CheckEqualsString('9.1878002271457504', lMatrixResp.Items[1].Items[0]);
 end;
 
 procedure TestRedisClient.TestGEORADIUS;

@@ -1,4 +1,5 @@
 "city","city_ascii","lat","lng","country","iso2","iso3","admin_name","capital","population","id"
+"Rome","Rome","41.8960","12.4833","Italy","IT","ITA","Lazio","primary","3339000","1380382862"
 "Tokyo","Tokyo","35.6850","139.7514","Japan","JP","JPN","Tōkyō","primary","35676000","1392685764"
 "New York","New York","40.6943","-73.9249","United States","US","USA","New York","","19354922.0","1840034016"
 "Mexico City","Mexico City","19.4424","-99.1310","Mexico","MX","MEX","Ciudad de México","primary","19028000","1484247881"
@@ -97,7 +98,6 @@
 "Johannesburg","Johannesburg","-26.1700","28.0300","South Africa","ZA","ZAF","Gauteng","admin","3435000","1710550792"
 "Berlin","Berlin","52.5218","13.4015","Germany","DE","DEU","Berlin","primary","3406000","1276451290"
 "Algiers","Algiers","36.7631","3.0506","Algeria","DZ","DZA","Alger","primary","3354000","1012973369"
-"Rome","Rome","41.8960","12.4833","Italy","IT","ITA","Lazio","primary","3339000","1380382862"
 "Pyongyang","Pyongyang","39.0194","125.7547","Korea, North","KP","PRK","P’yŏngyang","primary","3300000","1408738594"
 "Medellín","Medellin","6.2750","-75.5750","Colombia","CO","COL","Antioquia","admin","3297000","1170680389"
 "Kabul","Kabul","34.5167","69.1833","Afghanistan","AF","AFG","Kābul","primary","3277000","1004993580"

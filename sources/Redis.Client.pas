@@ -49,8 +49,6 @@ type
     function ParseSimpleStringResponse(var AValidResponse: boolean): string;
     function ParseIntegerResponse(var AValidResponse: boolean): Int64;
     function ParseFloatResponse(var AValidResponse: boolean): Double;
-    // function ParseArrayResponse(var AValidResponse: boolean): TArray<string>;
-    // deprecated 'Use: ParseArrayResponseNULL';
     function ParseRESPArray: TRedisRESPArray;
     procedure InternalParseRESPArray(const aRESPArray: TRedisRESPArray; const aSize: Int64);
     function ParseArrayResponseNULL: TRedisArray;
@@ -72,10 +70,6 @@ type
     function GetCmdList(const Cmd: string): IRedisCommand;
     procedure NextToken(out Msg: string);
     function NextBytes(const ACount: UInt32): TBytes;
-    /// //
-    // function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
-    // AKeys: array of string; ATimeout: Int32;
-    // var AIsValidResponse: boolean): TArray<string>; overload;
     function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand; aKeys: array of string; ATimeout: Int32): TRedisArray; overload;
     constructor Create(TCPLibInstance: IRedisNetLibAdapter; const HostName: string; const Port: Word); overload;
   public
