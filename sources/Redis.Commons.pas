@@ -226,7 +226,8 @@ type
     procedure FLUSHDB;
     procedure FLUSHALL;
     procedure SELECT(const aDBIndex: Integer);
-    procedure AUTH(const aPassword: string);
+    procedure AUTH(const aPassword: string); overload;
+    procedure AUTH(const aUsername, aPassword: string); overload;
     function MOVE(const aKey: string; const aDB: Byte): boolean;
 
     // raw execute
