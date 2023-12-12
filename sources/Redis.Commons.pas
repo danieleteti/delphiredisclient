@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2021 Daniele Teti
+// Copyright (c) 2015-2023 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -225,6 +225,7 @@ type
     // system
     procedure FLUSHDB;
     procedure FLUSHALL;
+    function PING: string;
     procedure SELECT(const aDBIndex: Integer);
     procedure AUTH(const aPassword: string); overload;
     procedure AUTH(const aUsername, aPassword: string); overload;

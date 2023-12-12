@@ -507,7 +507,8 @@ procedure TestRedisClient.TestGEOHASH;
 var
   lArrResp: TRedisArray;
 begin
-  lArrResp := FRedis.GEOHASH(KEY_GEODATA, ['roma', 'milano']);
+  LoadGeoData;
+  lArrResp := FRedis.GEOHASH(KEY_GEODATA, ['rome', 'milan']);
   CheckTrue(lArrResp.HasValue);
   CheckEquals(2, lArrResp.Count);
   CheckTrue(lArrResp.Items[0].HasValue);
@@ -526,19 +527,19 @@ begin
   lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['rome']);
   CheckFalse(lMatrixResp.IsNull);
   CheckFalse(lMatrixResp.Items[0].IsNull);
-  CheckEqualsString('41.90000206232070923', FloatToStr(RoundTo(StrToFloat(lMatrixResp.Items[0].Items[1], LFormatSettings), -6), LFormatSettings));
-  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[0]);
+  CheckEqualsString('41.895999', FloatToStr(RoundTo(StrToFloat(lMatrixResp.Items[0].Items[1], LFormatSettings), -6), LFormatSettings));
+  CheckEqualsString('12.48329848051071167', lMatrixResp.Items[0].Items[0]);
 
   lMatrixResp := FRedis.GEOPOS(KEY_GEODATA, ['rome', 'milan']);
   CheckFalse(lMatrixResp.IsNull);
   CheckFalse(lMatrixResp.Items[0].IsNull);
   CheckFalse(lMatrixResp.Items[1].IsNull);
 
-  CheckEqualsString('41.90000206232070923', lMatrixResp.Items[0].Items[1]);
-  CheckEqualsString('12.48330019941216307', lMatrixResp.Items[0].Items[0]);
+  CheckEqualsString('41.89599921996744314', lMatrixResp.Items[0].Items[1]);
+  CheckEqualsString('12.48329848051071167', lMatrixResp.Items[0].Items[0]);
 
-  CheckEqualsString('45.46119779348373413', lMatrixResp.Items[1].Items[1]);
-  CheckEqualsString('9.1878002271457504', lMatrixResp.Items[1].Items[0]);
+  CheckEqualsString('45.46999914489508399', lMatrixResp.Items[1].Items[1]);
+  CheckEqualsString('9.20500069856643677', lMatrixResp.Items[1].Items[0]);
 end;
 
 procedure TestRedisClient.TestGEORADIUS;

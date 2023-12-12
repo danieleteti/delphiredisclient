@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2021 Daniele Teti
+// Copyright (c) 2015-2023 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -211,6 +211,7 @@ type
     // system
     procedure FLUSHDB;
     procedure FLUSHALL;
+    function PING: string;
     procedure SELECT(const ADBIndex: Integer);
     procedure AUTH(const aPassword: string); overload;
     procedure AUTH(const aUsername, aPassword: string); overload;
@@ -1378,6 +1379,13 @@ function TRedisClient.PERSIST(const aKey: string): boolean;
 begin
   FNextCMD := GetCmdList('PERSIST').Add(aKey);
   Result := ExecuteWithIntegerResult(FNextCMD) = 1;
+end;
+
+function TRedisClient.PING: string;
+begin
+  FNextCMD := GetCmdList('PING');
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseSimpleStringResponse(FIsValidResponse);
 end;
 
 function TRedisClient.POPCommands(const aCommand: string;

@@ -43,6 +43,8 @@ begin
   try
     lRedis := TRedisClient.Create;
     lRedis.Connect;
+    WriteLn('Let''s start with a PING');
+    Writeln('PING --> ',lRedis.PING);
     lRedis.&SET('firstname', 'Daniele');
     lValue := lRedis.GET('firstname');
     if not lValue.IsNull then
