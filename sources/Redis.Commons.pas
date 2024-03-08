@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2023 Daniele Teti
+// Copyright (c) 2015-2024 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -38,6 +38,8 @@ const
   REDIS_NETLIB_INDY = 'indy';
 
 type
+  TRedisKeyList = TArray<string>;
+
   ERedisException = class(Exception)
   end;
 
@@ -230,6 +232,7 @@ type
     procedure AUTH(const aPassword: string); overload;
     procedure AUTH(const aUsername, aPassword: string); overload;
     function MOVE(const aKey: string; const aDB: Byte): boolean;
+    procedure SCAN(aPattern: string; aCallback: TProc<TArray<string>>);
 
     // raw execute
     function ExecuteAndGetRESPArray(const RedisCommand: IRedisCommand): TRedisRESPArray;

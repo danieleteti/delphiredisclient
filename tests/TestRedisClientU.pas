@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2021 Daniele Teti
+// Copyright (c) 2015-2024 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -121,6 +121,8 @@ type
     procedure TestSDIFF;
     procedure TestZREVRANGE;
     procedure TestZRANGE;
+
+    procedure TestSCAN;
 
     // test Redis 3.2+ commands
     procedure TestGEODIST;
@@ -1121,6 +1123,27 @@ begin
   CheckEquals('one', Value);
 
   CheckEquals(False, FRedis.RPOP('mylist', Value));
+end;
+
+procedure TestRedisClient.TestSCAN;
+begin
+  FRedis.&SET('A1','v1');
+  FRedis.&SET('A2','v1');
+  FRedis.&SET('A3','v1');
+  CheckTrue(FRedis.EXISTS('A1'));
+  CheckTrue(FRedis.EXISTS('A2'));
+  CheckTrue(FRedis.EXISTS('A3'));
+  FRedis.SCAN('A*',
+    procedure(Topics: TArray<string>)
+    begin
+      if Length(Topics) > 0 then
+      begin
+        FRedis.DEL(Topics);
+      end;
+    end);
+  CheckFalse(FRedis.EXISTS('A1'));
+  CheckFalse(FRedis.EXISTS('A2'));
+  CheckFalse(FRedis.EXISTS('A3'));
 end;
 
 procedure TestRedisClient.TestSDIFF;

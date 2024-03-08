@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2023 Daniele Teti
+// Copyright (c) 2015-2024 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -218,6 +218,7 @@ type
     function MOVE(const aKey: string; const aDB: Byte): boolean;
     function PERSIST(const aKey: string): boolean;
     function RANDOMKEY: TRedisString;
+    procedure SCAN(aPattern: string; aCallback: TProc<TArray<string>>);
     // non system
     function InTransaction: boolean;
     // transations
@@ -263,6 +264,34 @@ end;
 function TRedisClient.SADD(const aKey, aValue: string): Integer;
 begin
   Result := SADD(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
+end;
+
+procedure TRedisClient.SCAN(aPattern: string; aCallback: TProc<TArray<string>>);
+var
+  lCmd: IRedisCommand;
+  aCursor: integer;
+  AResp: TRedisRESPArray;
+  AKey: string;
+  Values: TArray<string>;
+begin
+  aCursor := 0;
+{$HINTS OFF} // H2443 - about inline function
+  repeat
+    lCmd := NewRedisCommand('SCAN');
+    lCmd.Add(aCursor);
+    lCmd.Add('MATCH');
+    lCmd.Add(Apattern);
+    AResp := ExecuteAndGetRESPArray(lCmd);
+    try
+      ACursor := AResp.I[0];
+      SetLength(Values, 0);
+      for AKey in AResp[1].ArrayValue do
+        Values := Values + [AKey];
+    finally
+      AResp.Free;
+    end;
+    aCallback(Values);
+  until aCursor = 0;
 end;
 
 function TRedisClient.SCARD(const aKey: string): Integer;
