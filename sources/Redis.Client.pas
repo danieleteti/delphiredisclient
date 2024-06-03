@@ -121,6 +121,10 @@ type
     // hash
     function HSET(const aKey, aField: string; aValue: string): Integer; overload;
     function HSET(const aKey, aField: string; aValue: TBytes): Integer; overload;
+    function HSETNX(const aKey, aField: string; aValue: string): Boolean; overload;
+    function HSETNX(const aKey, aField: string; aValue: TBytes): Boolean; overload;
+
+
     procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>); overload;
     procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>); overload;
     function HMGET(const aKey: string; aFields: TArray<string>): TRedisArray;
@@ -874,6 +878,23 @@ begin
   FNextCMD.Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
+end;
+
+function TRedisClient.HSETNX(const aKey, aField: string;
+  aValue: TBytes): Boolean;
+begin
+  FNextCMD := GetCmdList('HSETNX');
+  FNextCMD.Add(aKey);
+  FNextCMD.Add(aField);
+  FNextCMD.Add(aValue);
+  FTCPLibInstance.SendCmd(FNextCMD);
+  Result := ParseIntegerResponse(FValidResponse) = 1;
+end;
+
+function TRedisClient.HSETNX(const aKey, aField: string;
+  aValue: string): Boolean;
+begin
+  Result := HSETNX(aKey, aField,BytesOfUnicode(aValue));
 end;
 
 function TRedisClient.HVALS(const aKey: string): TRedisArray;
