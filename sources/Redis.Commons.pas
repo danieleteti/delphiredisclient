@@ -118,6 +118,8 @@ type
     procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>); overload;
     procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>); overload;
     function HSET(const aKey, aField: string; aValue: TBytes): Integer; overload;
+    function HSETNX(const aKey, aField: string; aValue: TBytes): Boolean; overload;
+    function HSETNX(const aKey, aField: string; aValue: string): Boolean; overload;
     function HGET(const aKey, aField: string; out aValue: TBytes): boolean; overload;
     function HGET(const aKey, aField: string; out aValue: string): boolean; overload;
     function HGET_AsBytes(const aKey, aField: string): TRedisBytes;
