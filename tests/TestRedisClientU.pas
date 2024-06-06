@@ -73,6 +73,8 @@ type
     procedure TestSETRANGE;
     procedure TestMSET;
     procedure TestINCR_DECR;
+    procedure TestINCBY;
+    procedure TestINCRBYFLOAT;
     procedure TestEXPIRE;
     procedure TestRENAME;
     procedure TestTYPE;
@@ -80,6 +82,7 @@ type
     procedure TestRPUSH_RPOP;
     procedure TestRPUSHX_LPUSHX;
     procedure TestLPUSH_LPOP;
+    procedure TestLSET_LINDEX;
     procedure TestLRANGE;
     procedure TestLLEN;
     procedure TestLTRIM;
@@ -834,6 +837,22 @@ begin
   CheckFalse(lResult.HasValue);
 end;
 
+procedure TestRedisClient.TestINCBY;
+begin
+  CheckEquals(2, FRedis.INCRBY('conrad', 2));
+  CheckEquals(4, FRedis.INCRBY('conrad', 2));
+  CheckEquals(0, FRedis.INCRBY('conrad', -4));
+  FRedis.DEL(['conrad']);
+end;
+
+procedure TestRedisClient.TestINCRBYFLOAT;
+begin
+  CheckEquals(1.34, FRedis.INCRBYFLOAT('conrad', 1.34), 1e-8);
+  CheckEquals(3, FRedis.INCRBYFLOAT('conrad', 1.66), 1e-8);
+  CheckEquals(0, FRedis.INCRBYFLOAT('conrad', -3), 1e-8);
+  FRedis.DEL(['conrad']);
+end;
+
 procedure TestRedisClient.TestINCR_DECR;
 begin
   FRedis.&SET('daniele', '-1');
@@ -930,6 +949,39 @@ begin
   CheckEquals('one', Value);
 
   CheckFalse(FRedis.LPOP('mylist', Value))
+end;
+
+procedure TestRedisClient.TestLSET_LINDEX;
+var
+  Value: string;
+begin
+  FRedis.DEL(['mylist']);
+
+  FRedis.LPUSH('mylist', ['one', 'two', 'three']);
+
+  FRedis.LSET('mylist', 0, '1');
+  FRedis.LSET('mylist', 1, '2');
+  FRedis.LSET('mylist', 2, '3');
+
+  CheckEquals('2', FRedis.LINDEX('mylist', 1));
+  CheckEquals('3', FRedis.LINDEX('mylist', 2));
+  CheckEquals('1', FRedis.LINDEX('mylist', 0));
+
+  CheckEquals(true, FRedis.LINDEX('mylist', 1, Value));
+  CheckEquals('2', Value);
+
+  CheckEquals(true, FRedis.LINDEX('mylist', 0, Value));
+  CheckEquals('1', Value);
+
+  CheckEquals(false, FRedis.LINDEX('mylist', 5, Value));
+
+  FArrResNullable := FRedis.LRANGE('mylist', 0, 3);
+  CheckEquals(3, Length(FArrResNullable.Value));
+  CheckEquals('1', FArrResNullable.Value[0]);
+  CheckEquals('2', FArrResNullable.Value[1]);
+  CheckEquals('3', FArrResNullable.Value[2]);
+
+  FRedis.DEL(['mylist']);
 end;
 
 procedure TestRedisClient.TestLRANGE;
