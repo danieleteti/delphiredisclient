@@ -902,10 +902,7 @@ function TRedisClient.HSETNX(const aKey, aField: string;
   aValue: string): Boolean;
 begin
   Result := HSETNX(aKey, aField,BytesOfUnicode(aValue));
-end;
-
-function TRedisClient.HVALS(const aKey: string): TRedisArray;
-begin
+end;function TRedisClient.HVALS(const aKey: string): TRedisArray;begin
   FNextCMD := GetCmdList('HVALS');
   FNextCMD.Add(aKey);
   FTCPLibInstance.SendCmd(FNextCMD);
