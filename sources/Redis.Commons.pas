@@ -99,6 +99,8 @@ type
     function KEYS(const AKeyPattern: string): TRedisArray;
     function INCR(const aKey: string): Int64;
     function DECR(const aKey: string): Int64;
+    function INCRBY(const aKey: string; const AValue: Int64): Int64;
+    function INCRBYFLOAT(const aKey: string; const AValue: double): double;
     function EXPIRE(const aKey: string; aExpireInSecond: UInt32): boolean;
     function PERSIST(const aKey: string): boolean;
     function RANDOMKEY: TRedisString;
@@ -152,6 +154,9 @@ type
     function BRPOP(const aKeys: array of string; const aTimeout: Int32; out Value: TArray<string>): boolean; overload; deprecated 'Use BRPOP: TRedisArray';
     function BRPOP(const aKeys: array of string; const aTimeout: Int32): TRedisArray; overload;
     function LREM(const aListKey: string; const aCount: Integer; const aValue: string): Integer;
+    procedure LSET(const aListKey: string; const aCount: Integer; const aValue: string);
+    function LINDEX(const aListKey: string; const aCount: Integer): string; overload;
+    function LINDEX(const aListKey: string; const aCount: Integer; out AValue: string): boolean; overload;
 
     // sets
     function SADD(const aKey, aValue: TBytes): Integer; overload;
