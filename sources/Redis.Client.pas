@@ -674,8 +674,8 @@ var
 begin
   lCmd := NewRedisCommand('GEORADIUS');
   lCmd.Add(Key);
-  lCmd.Add(FormatFloat('0.0000000', Latitude));
   lCmd.Add(FormatFloat('0.0000000', Longitude));
+  lCmd.Add(FormatFloat('0.0000000', Latitude));
   lCmd.Add(FormatFloat('0.0000000', Radius));
   lCmd.Add(REDIS_GEO_UNIT_STRING[&Unit]);
   if Count > -1 then
