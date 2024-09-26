@@ -1235,6 +1235,7 @@ end;
 procedure TestRedisClient.TestSetGet;
 var
   Res: string;
+  Expected: String;
 begin
 
 {$WARN SYMBOL_DEPRECATED OFF}
@@ -1252,6 +1253,11 @@ begin
   CheckTrue(FRedis.&SET('no"me', 'Dan iele'));
   CheckTrue(FRedis.GET('no"me', Res));
   CheckEquals('Dan iele', Res);
+
+  Expected := #$C2' stray character';
+  CheckTrue(FRedis.&SET('value', TEncoding.UTF8.GetBytes(Expected)));
+  CheckTrue(FRedis.GET('value', Res));
+  CheckEquals(Expected, Res);
 end;
 
 procedure TestRedisClient.TestSetGetUnicode;

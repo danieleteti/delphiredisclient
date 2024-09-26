@@ -67,6 +67,8 @@ type
 
   TRedisClientBase = class abstract(TInterfacedObject)
   protected
+    function BytesOf(const Val: string): TBytes;
+    function StringOf(const Bytes: TBytes): string;
     function BytesOfUnicode(const AUnicodeString: string): TBytes;
     function StringOfUnicode(const ABytes: TBytes): string;
   end;
@@ -331,6 +333,16 @@ end;
 function TRedisClientBase.StringOfUnicode(const ABytes: TBytes): string;
 begin
   Result := StringOf(ABytes);
+end;
+
+function TRedisClientBase.BytesOf(const Val: string): TBytes;
+begin
+  Result := TEncoding.UTF8.GetBytes(Val);
+end;
+
+function TRedisClientBase.StringOf(const Bytes: TBytes): string;
+begin
+  Result := TEncoding.UTF8.GetString(Bytes);
 end;
 
 end.
