@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright (c) 2015-2021 Daniele Teti
+// Copyright c 2015-2025 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -27,7 +27,7 @@ unit ConstantsU;
 interface
 
 const
-  REDIS_HOSTNAME = '192.168.1.6';
+  REDIS_HOSTNAME = 'localhost';
 
 implementation
 
