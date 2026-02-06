@@ -2,7 +2,7 @@
 //
 // Delphi REDIS Client
 //
-// Copyright c 2015-2025 Daniele Teti
+// Copyright (c) 2015-2024 Daniele Teti
 //
 // https://github.com/danieleteti/delphiredisclient
 //
@@ -67,8 +67,6 @@ type
 
   TRedisClientBase = class abstract(TInterfacedObject)
   protected
-    function BytesOf(const Val: string): TBytes;
-    function StringOf(const Bytes: TBytes): string;
     function BytesOfUnicode(const AUnicodeString: string): TBytes;
     function StringOfUnicode(const ABytes: TBytes): string;
   end;
@@ -94,24 +92,6 @@ type
     function GET_AsBytes(const aKey: string): TRedisBytes;
     function GET(const aKey: TBytes; out aValue: TBytes): boolean; overload; deprecated 'Use GET(aKey: string): TRedisString';
     function GET(const aKey: string; out aValue: TBytes): boolean; overload; deprecated 'Use GET(aKey: string): TRedisString';
-
-    // Redis 6.2.0+ commands
-    /// <summary>
-    /// GETEX - Get the value of a key and optionally set its expiration (Redis 6.2+)
-    /// </summary>
-    function GETEX(const aKey: string; aExpirationMs: UInt64): TRedisString; overload;
-    function GETEX(const aKey: string; aExpirationSec: UInt64; const UseSeconds: Boolean): TRedisString; overload;
-
-    /// <summary>
-    /// GETDEL - Get the value of a key and delete it atomically (Redis 6.2+)
-    /// </summary>
-    function GETDEL(const aKey: string): TRedisString;
-
-    /// <summary>
-    /// COPY - Copy a key to another key (Redis 6.2+)
-    /// </summary>
-    function COPY(const aSourceKey, aDestKey: string; const aReplace: Boolean = False): Boolean;
-
     function DEL(const aKeys: array of string): Integer;
     function TTL(const aKey: string): Integer;
     function EXISTS(const aKey: string): boolean;
@@ -190,8 +170,6 @@ type
     function SCARD(const aKey: string): Integer;
     function SUNION(const aKeys: array of string): TRedisArray;
     function SUNIONSTORE(const aDestination: String; const aKeys: array of string): Integer;
-    // Redis 6.2+ Set commands
-    function SMOVE(const aSource, aDestination, aMember: string): Boolean;
 
     // ordered sets
     function ZADD(const aKey: string; const AScore: Int64; const AMember: string): Integer;
@@ -207,11 +185,6 @@ type
     function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string): Int64; overload;
     function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64; overload;
     function ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64; overload;
-    // Redis 5.0+ Sorted Set commands
-    function ZPOPMIN(const aKey: string): TRedisArray; overload;
-    function ZPOPMIN(const aKey: string; aCount: Integer): TRedisArray; overload;
-    function ZPOPMAX(const aKey: string): TRedisArray; overload;
-    function ZPOPMAX(const aKey: string; aCount: Integer): TRedisArray; overload;
 
     // geo
     /// <summary>
@@ -254,45 +227,9 @@ type
       const Sorting: TRedisSorting = TRedisSorting.None;
       const Count: Int64 = -1): TRedisMatrix;
 
-    /// <summary>
-    /// GEOSEARCH (Redis 6.2+)
-    /// Search for members in a geospatial index within a radius or box from a member
-    /// </summary>
-    function GEOSEARCH(const Key: string; const FromMember: string;
-      const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
-      const Sorting: TRedisSorting = TRedisSorting.None;
-      const Count: Int64 = -1): TRedisArray; overload;
-
-    /// <summary>
-    /// GEOSEARCH (Redis 6.2+)
-    /// Search for members in a geospatial index within a radius or box from coordinates
-    /// </summary>
-    function GEOSEARCH(const Key: string; const Longitude, Latitude: Extended;
-      const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
-      const Sorting: TRedisSorting = TRedisSorting.None;
-      const Count: Int64 = -1): TRedisArray; overload;
-
-    /// <summary>
-    /// GEOSEARCHSTORE (Redis 6.2+)
-    /// Search and store results in destination key
-    /// </summary>
-    function GEOSEARCHSTORE(const Destination, Source: string; const FromMember: string;
-      const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
-      const Sorting: TRedisSorting = TRedisSorting.None;
-      const Count: Int64 = -1): Integer; overload;
-
-    /// <summary>
-    /// GEOSEARCHSTORE (Redis 6.2+)
-    /// Search from coordinates and store results in destination key
-    /// </summary>
-    function GEOSEARCHSTORE(const Destination, Source: string; const Longitude, Latitude: Extended;
-      const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
-      const Sorting: TRedisSorting = TRedisSorting.None;
-      const Count: Int64 = -1): Integer; overload;
-
     // lua scripts
     function EVAL(const aScript: string; aKeys: array of string;
-      aValues: array of string): Integer;
+      aValues: array of string): TRedisArray;overload;
 
     // system
     procedure FLUSHDB;
@@ -394,16 +331,6 @@ end;
 function TRedisClientBase.StringOfUnicode(const ABytes: TBytes): string;
 begin
   Result := StringOf(ABytes);
-end;
-
-function TRedisClientBase.BytesOf(const Val: string): TBytes;
-begin
-  Result := TEncoding.UTF8.GetBytes(Val);
-end;
-
-function TRedisClientBase.StringOf(const Bytes: TBytes): string;
-begin
-  Result := TEncoding.UTF8.GetString(Bytes);
 end;
 
 end.
