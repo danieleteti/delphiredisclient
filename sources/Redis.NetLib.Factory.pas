@@ -35,6 +35,7 @@ type
   TRedisNetLibAdapter = class abstract(TInterfacedObject, IRedisNetLibAdapter)
     constructor Create; virtual;
   protected
+    function IsConnected:Boolean; virtual; abstract;
     procedure Connect(const HostName: string; const Port: Word);
       virtual; abstract;
     procedure Send(const Value: string); virtual; abstract;

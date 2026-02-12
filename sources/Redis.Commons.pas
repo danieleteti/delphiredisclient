@@ -360,6 +360,7 @@ type
 
   IRedisNetLibAdapter = interface
     ['{2DB21166-2E68-4DC4-9870-5DCCAAE877A3}']
+    function IsConnected:Boolean;
     procedure Connect(const HostName: string; const Port: Word);
     procedure Send(const Value: string);
     procedure Write(const Bytes: TBytes);
