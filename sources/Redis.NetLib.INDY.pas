@@ -40,6 +40,7 @@ type
     { ===IRedisTCPLib=== }
     procedure Connect(const HostName: string; const Port: Word); override;
     procedure Disconnect; override;
+    function IsConnected:Boolean; override;
     function Receive(const Timeout: Int32): string; override;
     function ReceiveBytes(const ACount: Int64; const Timeout: Int32)
       : System.TArray<System.Byte>; override;
@@ -83,6 +84,11 @@ begin
     FTCPClient.Disconnect;
   except
   end;
+end;
+
+function TRedisTCPLibINDY.IsConnected: Boolean;
+begin
+  Result := FTCPClient.Connected;
 end;
 
 function TRedisTCPLibINDY.LastReadWasTimedOut: boolean;

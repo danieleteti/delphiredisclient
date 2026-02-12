@@ -21,15 +21,11 @@
 // limitations under the License.
 //
 // ***************************************************************************
-
 unit Redis.Client;
-
 interface
-
 uses
   System.Generics.Collections, System.SysUtils, Redis.Command, Redis.Commons,
   Redis.Values;
-
 type
   TRedisClient = class(TRedisClientBase, IRedisClient)
   private
@@ -59,12 +55,10 @@ type
     function AppendKeyValueParams(const aRedisCommand: IRedisCommand; const Keys, Values: array of string): String;
   protected
     procedure BuildZUNIONSTOREDefault(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string);
-
     function GetGEORADIUSCommand(const Key: string;
       const Longitude, Latitude: Extended; const Radius: Extended;
       const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting;
       const Count: Int64): IRedisCommand;
-
     function POPCommands(const aCommand: string; const aListKey: string): TRedisString;
     procedure CheckResponseError(const aResponse: string);
     function GetCmdList(const Cmd: string): IRedisCommand;
@@ -73,6 +67,7 @@ type
     function InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand; aKeys: array of string; ATimeout: Int32): TRedisArray; overload;
     constructor Create(TCPLibInstance: IRedisNetLibAdapter; const HostName: string; const Port: Word); overload;
   public
+    function IsConnected:Boolean;
     function Tokenize(const ARedisCommand: string): TArray<string>;
     constructor Create(const HostName: string = '127.0.0.1'; const Port: Word = 6379; const Lib: string = REDIS_NETLIB_INDY); overload;
     destructor Destroy; override;
@@ -80,13 +75,11 @@ type
     { *** Methods using the nullable Redis Values *** }
     function GET(const aKey: string): TRedisString; overload;
     function GET_AsBytes(const aKey: string): TRedisBytes;
-
     // Redis 6.2+ commands
     function GETEX(const aKey: string; aExpirationMs: UInt64): TRedisString; overload;
     function GETEX(const aKey: string; aExpirationSec: UInt64; const UseSeconds: Boolean): TRedisString; overload;
     function GETDEL(const aKey: string): TRedisString;
     function COPY(const aSourceKey, aDestKey: string; const aReplace: Boolean = False): Boolean;
-
     function HGET_AsBytes(const aKey, aField: string): TRedisBytes;
     function HGET(const aKey, aField: string): TRedisString; overload;
     function RPOP(const aListKey: string): TRedisString; overload;
@@ -119,20 +112,17 @@ type
     function RENAME(const aKey, aNewKey: string): boolean;
     function RENAMENX(const aKey, aNewKey: string): boolean;
     function &TYPE(const aKey: string):string;
-
     // string functions
     function APPEND(const aKey, aValue: TBytes): UInt64; overload;
     function APPEND(const aKey, aValue: string): UInt64; overload;
     function STRLEN(const aKey: string): UInt64;
     function GETRANGE(const aKey: string; const AStart, AEnd: NativeInt): string;
     function SETRANGE(const aKey: string; const AOffset: NativeInt; const aValue: string): NativeInt;
-
     // hash
     function HSET(const aKey, aField: string; aValue: string): Integer; overload;
     function HSET(const aKey, aField: string; aValue: TBytes): Integer; overload;
     function HSETNX(const aKey, aField: string; aValue: string): Boolean; overload;
     function HSETNX(const aKey, aField: string; aValue: TBytes): Boolean; overload;
-
 
     procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>); overload;
     procedure HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>); overload;
@@ -165,7 +155,6 @@ type
     procedure LSET(const aListKey: string; const aIndex: Integer; const aValue: string);
     function LINDEX(const aListKey: string; const AIndex: Integer): string; overload;
     function LINDEX(const aListKey: string; const AIndex: Integer; out AValue: string): boolean; overload;
-
 {$ENDREGION}
     // pubsub
 {$REGION PUBSUB}
@@ -241,12 +230,10 @@ type
       const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
       const Sorting: TRedisSorting = TRedisSorting.None;
       const Count: Int64 = -1): Integer; overload;
-
     {$REGION STREAMS}
       function XADD(const aStreamName: String; const MaxLength: UInt64; const MaxLengthType: TRedisMaxLengthType; const Keys, Values: array of string; const ID: UInt64 = 0): String; overload;
       function XADD(const aStreamName: String; const Keys, Values: array of string; const ID: UInt64 = 0): String; overload;
     {$ENDREGION}
-
     // lua scripts
     function EVAL(const AScript: string; aKeys: array of string; aValues: array of string): Integer;
     // system
@@ -281,32 +268,24 @@ type
     procedure ClientSetName(const ClientName: string);
     function Clone: IRedisClient;
   end;
-
 function NewRedisClient(const AHostName: string = 'localhost'; const APort: Word = 6379; const ALibName: string = REDIS_NETLIB_INDY): IRedisClient;
 function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
-
 implementation
-
 uses Redis.NetLib.Factory;
-
 const
   REDIS_GEO_UNIT_STRING: array [TRedisGeoUnit.Meters .. TRedisGeoUnit.Feet] of string = ('m', 'km', 'mi', 'ft');
   REDIS_AGGREGATE: array [TRedisAggregate.Sum .. TRedisAggregate.Max] of string = ('SUM', 'MIN', 'MAX');
-
   { TRedisClient }
-
 function TRedisClient.SADD(const aKey, aValue: TBytes): Integer;
 begin
   FNextCMD := GetCmdList('SADD').Add(aKey).Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.SADD(const aKey, aValue: string): Integer;
 begin
   Result := SADD(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
 end;
-
 procedure TRedisClient.SCAN(aPattern: string; aCallback: TProc<TArray<string>>);
 var
   lCmd: IRedisCommand;
@@ -334,26 +313,22 @@ begin
     aCallback(Values);
   until aCursor = 0;
 end;
-
 function TRedisClient.SCARD(const aKey: string): Integer;
 begin
   FNextCMD := GetCmdList('SCARD').Add(aKey);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function TRedisClient.SDIFF(const aKeys: array of string): TRedisArray;
 begin
   FNextCMD := GetCmdList('SDIFF').AddRange(aKeys);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 procedure TRedisClient.SELECT(const ADBIndex: Integer);
 begin
   FNextCMD := GetCmdList('SELECT').Add(ADBIndex.ToString);
   ExecuteWithStringResult(FNextCMD);
 end;
-
 function TRedisClient.&SET(const aKey, aValue: TBytes): boolean;
 var
   lRes: TRedisString;
@@ -365,12 +340,10 @@ begin
   lRes := ParseSimpleStringResponseAsStringNULL;
   Result := lRes.HasValue;
 end;
-
 function TRedisClient.&SET(const aKey: string; aValue: TBytes): boolean;
 begin
   Result := &SET(BytesOf(aKey), aValue);
 end;
-
 function TRedisClient.APPEND(const aKey, aValue: TBytes): UInt64;
 begin
   FNextCMD := GetCmdList('APPEND');
@@ -378,12 +351,10 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FIsValidResponse);
 end;
-
 function TRedisClient.APPEND(const aKey, aValue: string): UInt64;
 begin
   Result := APPEND(BytesOf(aKey), BytesOf(aValue));
 end;
-
 procedure TRedisClient.AUTH(const aPassword: string);
 begin
   FNextCMD := GetCmdList('AUTH');
@@ -391,7 +362,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   ParseSimpleStringResponse(FIsValidResponse);
 end;
-
 procedure TRedisClient.AUTH(const aUsername, aPassword: string);
 begin
   FNextCMD := GetCmdList('AUTH');
@@ -399,7 +369,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   ParseSimpleStringResponse(FIsValidResponse);
 end;
-
 function TRedisClient.BLPOP(const aKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
 var
   lRes: TRedisArray;
@@ -413,13 +382,11 @@ begin
   // FIsValidResponse);
   // Result := FIsValidResponse;
 end;
-
 function TRedisClient.BLPOP(const aKeys: array of string; const ATimeout: Int32): TRedisArray;
 begin
   FNextCMD := GetCmdList('BLPOP');
   Result := InternalBlockingLeftOrRightPOP(FNextCMD, aKeys, ATimeout);
 end;
-
 function TRedisClient.BRPOP(const aKeys: array of string; const ATimeout: Int32; out Value: TArray<string>): boolean;
 var
   lRes: TRedisArray;
@@ -430,13 +397,11 @@ begin
   if Result then
     Value := lRes.ToArray;
 end;
-
 procedure TRedisClient.CheckResponseError(const aResponse: string);
 begin
   if aResponse.Chars[0] = '-' then
     raise ERedisException.Create(aResponse.Substring(1))
 end;
-
 procedure TRedisClient.CheckResponseType(Expected, Actual: string);
 begin
   if Expected <> Actual then
@@ -444,7 +409,6 @@ begin
     raise ERedisException.CreateFmt('Expected %s got %s', [Expected, Actual]);
   end;
 end;
-
 procedure TRedisClient.ClientSetName(const ClientName: string);
 begin
   FNextCMD := GetCmdList('CLIENT');
@@ -453,17 +417,14 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   CheckResponseType('OK', ParseSimpleStringResponse(FValidResponse));
 end;
-
 function TRedisClient.Clone: IRedisClient;
 begin
   Result := NewRedisClient(FHostName, FPort, FTCPLibInstance.LibName);
 end;
-
 procedure TRedisClient.Connect;
 begin
   FTCPLibInstance.Connect(FHostName, FPort);
 end;
-
 constructor TRedisClient.Create(const HostName: string; const Port: Word; const Lib: string);
 var
   TCPLibInstance: IRedisNetLibAdapter;
@@ -473,7 +434,6 @@ begin
   Create(TCPLibInstance, HostName, Port);
   FFormatSettings.DecimalSeparator := '.';
 end;
-
 constructor TRedisClient.Create(TCPLibInstance: IRedisNetLibAdapter; const HostName: string; const Port: Word);
 begin
   inherited Create;
@@ -483,13 +443,11 @@ begin
   FRedisCmdParts := TRedisCommand.Create;
   FCommandTimeout := -1;
 end;
-
 function TRedisClient.DECR(const aKey: string): Int64;
 begin
   FTCPLibInstance.SendCmd(GetCmdList('DECR').Add(aKey));
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.DEL(const aKeys: array of string): Integer;
 begin
   FNextCMD := GetCmdList('DEL');
@@ -497,19 +455,16 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 destructor TRedisClient.Destroy;
 begin
   inherited;
 end;
-
 procedure TRedisClient.DISCARD;
 begin
   FNextCMD := GetCmdList('DISCARD');
   FTCPLibInstance.SendCmd(FNextCMD);
   ParseSimpleStringResponseAsStringNULL;
 end;
-
 procedure TRedisClient.Disconnect;
 begin
   try
@@ -517,19 +472,16 @@ begin
   except
   end;
 end;
-
 function TRedisClient.ExecuteWithIntegerResult(const RedisCommand: IRedisCommand): Int64;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.ExecuteWithStringResult(const RedisCommand: IRedisCommand): TRedisString;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseSimpleStringResponseAsStringNULL;
 end;
-
 function TRedisClient.EXISTS(const aKey: string): boolean;
 begin
   FNextCMD := GetCmdList('EXISTS');
@@ -537,21 +489,18 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
-
 function TRedisClient.EXPIRE(const aKey: string; AExpireInSecond: UInt32): boolean;
 begin
   FTCPLibInstance
   .Write(GetCmdList('EXPIRE')
   .Add(aKey)
   .Add(AExpireInSecond.ToString).ToRedisCommand);
-
   {
     1 if the timeout was set.
     0 if key does not exist or the timeout could not be set.
   }
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
-
 function TRedisClient.RENAME(const aKey, aNewKey: string): boolean;
 var
   lRes: TRedisString;
@@ -563,7 +512,6 @@ begin
   lRes := ParseSimpleStringResponseAsStringNULL;
   Result := lRes.HasValue;
 end;
-
 function TRedisClient.RENAMENX(const aKey, aNewKey: string): boolean;
 var
   lRes: TRedisString;
@@ -575,7 +523,6 @@ begin
   lRes := ParseSimpleStringResponseAsStringNULL;
   Result := lRes.HasValue;
 end;
-
 function TRedisClient.&TYPE(const aKey: string): string;
 begin
   FNextCMD := GetCmdList('TYPE');
@@ -583,7 +530,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseSimpleStringResponse(FIsValidResponse);
 end;
-
 function TRedisClient.EVAL(const AScript: string; aKeys, aValues: array of string): Integer;
 var
   lCmd: IRedisCommand;
@@ -593,7 +539,6 @@ begin
   lCmd := NewRedisCommand('EVAL');
   lParamsCount := Length(aKeys);
   lCmd.Add(AScript).Add(IntToStr(lParamsCount));
-
   if lParamsCount > 0 then
   begin
     for lPar in aKeys do
@@ -606,10 +551,8 @@ begin
   begin
     lCmd.Add(lPar);
   end;
-
   Result := ExecuteWithIntegerResult(lCmd);
 end;
-
 function TRedisClient.EXEC: TRedisArray;
 begin
   FNextCMD := GetCmdList('EXEC');
@@ -619,7 +562,6 @@ begin
   if Result.IsNull then
     raise ERedisException.Create('Transaction failed');
 end;
-
 function TRedisClient.ExecuteAndGetArray(const RedisCommand: IRedisCommand): TRedisArray;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
@@ -630,7 +572,6 @@ begin
   // if not FValidResponse then
   // raise ERedisException.Create('Not valid response');
 end;
-
 function TRedisClient.ExecuteAndGetArrayNULL(const RedisCommand: IRedisCommand): TRedisArray;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
@@ -638,7 +579,6 @@ begin
   if FTCPLibInstance.LastReadWasTimedOut then
     Exit;
 end;
-
 function TRedisClient.ExecuteAndGetMatrix(const RedisCommand: IRedisCommand): TRedisMatrix;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
@@ -646,13 +586,11 @@ begin
   if FTCPLibInstance.LastReadWasTimedOut then
     Exit;
 end;
-
 function TRedisClient.ExecuteAndGetRESPArray(const RedisCommand: IRedisCommand): TRedisRESPArray;
 begin
   FTCPLibInstance.Write(RedisCommand.ToRedisCommand);
   Result := ParseRESPArray;
 end;
-
 procedure TRedisClient.FLUSHALL;
 var
   lRes: TRedisNullable<string>;
@@ -662,13 +600,11 @@ begin
   if lRes.Value <> 'OK' then
     raise ERedisException.Create('Cannot flush DBs: ' + lRes.Value);
 end;
-
 procedure TRedisClient.FLUSHDB;
 begin
   FTCPLibInstance.SendCmd(GetCmdList('FLUSHDB'));
   ParseSimpleStringResponse(FNotExists);
 end;
-
 function TRedisClient.GET(const aKey: string; out aValue: string): boolean;
 var
   Resp: TBytes;
@@ -676,7 +612,6 @@ begin
   Result := GET(BytesOfUnicode(aKey), Resp);
   aValue := StringOfUnicode(Resp);
 end;
-
 function TRedisClient.GET(const aKey: TBytes; out aValue: TBytes): boolean;
 var
   Pieces: IRedisCommand;
@@ -685,20 +620,17 @@ begin
   Pieces := GetCmdList('GET');
   Pieces.Add(aKey);
   FTCPLibInstance.SendCmd(Pieces);
-
   lRes := ParseSimpleStringResponseAsByteNULL;
   Result := lRes.HasValue;
   if Result then
     aValue := lRes.Value;
 end;
-
 function TRedisClient.GetCmdList(const Cmd: string): IRedisCommand;
 begin
   FRedisCmdParts.Clear;
   Result := FRedisCmdParts;
   Result.SetCommand(Cmd);
 end;
-
 function TRedisClient.GetGEORADIUSCommand(const Key: string; const Longitude, Latitude, Radius: Extended; const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting; const Count: Int64): IRedisCommand;
 var
   lCmd: IRedisCommand;
@@ -711,7 +643,6 @@ begin
   lCmd.Add(REDIS_GEO_UNIT_STRING[&Unit]);
   if Count > -1 then
     lCmd.Add('COUNT').Add(Count);
-
   case Sorting of
     TRedisSorting.Asc:
       lCmd.Add('ASC');
@@ -720,14 +651,12 @@ begin
   end;
   Result := lCmd;
 end;
-
 function TRedisClient.GETRANGE(const aKey: string; const AStart, AEnd: NativeInt): string;
 begin
   FNextCMD := GetCmdList('GETRANGE').Add(aKey).Add(AStart).Add(AEnd);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseSimpleStringResponse(FIsValidResponse);
 end;
-
 function TRedisClient.GET_AsBytes(const aKey: string): TRedisBytes;
 var
   Pieces: IRedisCommand;
@@ -737,12 +666,10 @@ begin
   FTCPLibInstance.SendCmd(Pieces);
   Result := ParseSimpleStringResponseAsByteNULL;
 end;
-
 function TRedisClient.HSET(const aKey, aField: string; aValue: string): Integer;
 begin
   Result := HSET(aKey, aField, BytesOfUnicode(aValue));
 end;
-
 function TRedisClient.HGET(const aKey, aField: string; out aValue: TBytes): boolean;
 var
   Pieces: IRedisCommand;
@@ -757,7 +684,6 @@ begin
   if Result then
     aValue := lRes.Value;
 end;
-
 function TRedisClient.HDEL(const aKey: string; aFields: TArray<string>)
   : Integer;
 var
@@ -769,7 +695,6 @@ begin
   FTCPLibInstance.SendCmd(lCommand);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.HEXISTS(const aKey, aField: string): Boolean;
 var
   lCommand: IRedisCommand;
@@ -780,7 +705,6 @@ begin
   FTCPLibInstance.SendCmd(lCommand);
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
-
 function TRedisClient.HGET(const aKey, aField: string;
   out aValue: string): boolean;
 var
@@ -789,7 +713,6 @@ begin
   Result := HGET(aKey, aField, Resp);
   aValue := StringOfUnicode(Resp);
 end;
-
 function TRedisClient.HGET(const aKey, aField: string): TRedisString;
 var
   lResp: TRedisBytes;
@@ -797,7 +720,6 @@ begin
   lResp := HGET_AsBytes(aKey, aField);
   Result := Redis_BytesToString(lResp);
 end;
-
 function TRedisClient.HGET_AsBytes(const aKey, aField: string): TRedisBytes;
 var
   Pieces: IRedisCommand;
@@ -808,7 +730,6 @@ begin
   FTCPLibInstance.SendCmd(Pieces);
   Result := ParseSimpleStringResponseAsByteNULL;
 end;
-
 function TRedisClient.HINCRBY(const aKey, aField: string; const AIncrement: NativeInt): Integer;
 var
   lCommand: IRedisCommand;
@@ -820,7 +741,6 @@ begin
   FTCPLibInstance.SendCmd(lCommand);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.HINCRBYFLOAT(const aKey, aField: string; const AIncrement: Double): Double;
 var
   lCommand: IRedisCommand;
@@ -832,7 +752,6 @@ begin
   FTCPLibInstance.SendCmd(lCommand);
   Result := ParseFloatResponse(FValidResponse);
 end;
-
 function TRedisClient.HKEYS(const aKey: string): TRedisArray;
 begin
   FNextCMD := GetCmdList('HKEYS');
@@ -840,7 +759,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.HLEN(const aKey: string): Integer;
 var
   lCommand: IRedisCommand;
@@ -850,7 +768,6 @@ begin
   FTCPLibInstance.SendCmd(lCommand);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.HMGET(const aKey: string; aFields: TArray<string>): TRedisArray;
 var
   Pieces: IRedisCommand;
@@ -865,14 +782,12 @@ begin
   FTCPLibInstance.SendCmd(Pieces);
   Result := ParseArrayResponseNULL;
 end;
-
 procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<TBytes>);
 var
   I: Integer;
 begin
   if Length(aFields) <> Length(aValues) then
     raise ERedisException.Create('Fields count and values count are different');
-
   FNextCMD := GetCmdList('HMSET');
   FNextCMD.Add(aKey);
   for I := low(aFields) to high(aFields) do
@@ -886,14 +801,12 @@ begin
   else
     CheckResponseType('OK', ParseSimpleStringResponseAsStringNULL.Value);
 end;
-
 procedure TRedisClient.HMSET(const aKey: string; aFields: TArray<string>; aValues: TArray<string>);
 var
   I: Integer;
 begin
   if Length(aFields) <> Length(aValues) then
     raise ERedisException.Create('Fields count and values count are different');
-
   FNextCMD := GetCmdList('HMSET');
   FNextCMD.Add(aKey);
   for I := low(aFields) to high(aFields) do
@@ -907,7 +820,6 @@ begin
   else
     CheckResponseType('OK', ParseSimpleStringResponseAsStringNULL.Value);
 end;
-
 function TRedisClient.HSET(const aKey, aField: string; aValue: TBytes): Integer;
 begin
   FNextCMD := GetCmdList('HSET');
@@ -917,7 +829,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.HSETNX(const aKey, aField: string;
   aValue: TBytes): Boolean;
 begin
@@ -928,13 +839,11 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
-
 function TRedisClient.HSETNX(const aKey, aField: string;
   aValue: string): Boolean;
 begin
   Result := HSETNX(aKey, aField,BytesOfUnicode(aValue));
 end;
-
 function TRedisClient.HVALS(const aKey: string): TRedisArray;
 begin
   FNextCMD := GetCmdList('HVALS');
@@ -942,13 +851,11 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.INCR(const aKey: string): Int64;
 begin
   FTCPLibInstance.SendCmd(GetCmdList('INCR').Add(aKey));
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.INCRBY(const aKey: string; const AValue: Int64): Int64;
 begin
   FNextCMD := GetCmdList('INCRBY');
@@ -957,7 +864,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.INCRBYFLOAT(const aKey: string; const AValue: double): double;
 begin
   FNextCMD := GetCmdList('INCRBYFLOAT');
@@ -966,7 +872,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseFloatResponse(FValidResponse);
 end;
-
 // function TRedisClient.InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand;
 // AKeys: array of string; ATimeout: Int32; var AIsValidResponse: boolean)
 // : TArray<string>;
@@ -976,7 +881,6 @@ end;
 // FTCPLibInstance.SendCmd(NextCMD);
 // Result := ParseArrayResponse(AIsValidResponse);
 // end;
-
 function TRedisClient.InternalBlockingLeftOrRightPOP(NextCMD: IRedisCommand; aKeys: array of string; ATimeout: Int32): TRedisArray;
 begin
   NextCMD.AddRange(aKeys);
@@ -984,7 +888,6 @@ begin
   FTCPLibInstance.SendCmd(NextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 procedure TRedisClient.InternalParseRESPArray(const aRESPArray: TRedisRESPArray; const aSize: Int64);
 var
   lTokenType: Char;
@@ -1001,7 +904,6 @@ begin
   // For Integers the first byte of the reply is ":"
   // For Bulk Strings the first byte of the reply is "$"
   // For Arrays the first byte of the reply is "*"
-
   for I := 0 to aSize - 1 do
   begin
     NextToken(R);
@@ -1033,10 +935,14 @@ begin
     end;
   end;
 end;
-
 function TRedisClient.InTransaction: boolean;
 begin
   Result := FInTransaction;
+end;
+function TRedisClient.IsConnected: Boolean;
+begin
+  result := FTCPLibInstance.IsConnected;
+
 end;
 
 function TRedisClient.KEYS(const AKeyPattern: string): TRedisArray;
@@ -1046,7 +952,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.LINDEX(const aListKey: string; const AIndex: Integer; out AValue: string): boolean;
 var
   lRes: TRedisNullable<TBytes>;
@@ -1060,13 +965,11 @@ begin
   if Result then
     aValue := StringOfUnicode(lRes.Value);
 end;
-
 function TRedisClient.LINDEX(const aListKey: string; const AIndex: Integer): string;
 begin
   if not LINDEX(aListKey, AIndex, result) then
     exit('');
 end;
-
 function TRedisClient.LLEN(const aListKey: string): Integer;
 begin
   FNextCMD := GetCmdList('LLEN');
@@ -1074,7 +977,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.LPOP(const aListKey: string; out Value: string): boolean;
 begin
   FNextCMD := GetCmdList('LPOP');
@@ -1082,12 +984,10 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Value := ParseSimpleStringResponse(Result);
 end;
-
 function TRedisClient.LPOP(const aListKey: string): TRedisString;
 begin
   Result := POPCommands('LPOP', aListKey);
 end;
-
 function TRedisClient.LPUSH(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('LPUSH');
@@ -1096,7 +996,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.LPUSHX(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('LPUSHX');
@@ -1105,7 +1004,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.LRANGE(const aListKey: string; aIndexStart, aIndexStop: Integer): TRedisArray;
 begin
   FNextCMD := GetCmdList('LRANGE');
@@ -1115,7 +1013,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.LREM(const aListKey: string; const ACount: Integer; const aValue: string): Integer;
 begin
   FNextCMD := GetCmdList('LREM');
@@ -1125,7 +1022,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 procedure TRedisClient.LSET(const aListKey: string; const aIndex: Integer; const aValue: string);
 var
   lResult: string;
@@ -1138,7 +1034,6 @@ begin
   if lResult <> 'OK' then
     raise ERedisException.Create(lResult);
 end;
-
 procedure TRedisClient.LTRIM(const aListKey: string; const aIndexStart, aIndexStop: Integer);
 var
   lResult: string;
@@ -1149,13 +1044,11 @@ begin
   if lResult <> 'OK' then
     raise ERedisException.Create(lResult);
 end;
-
 function TRedisClient.MOVE(const aKey: string; const aDB: Byte): boolean;
 begin
   FNextCMD := GetCmdList('MOVE').Add(aKey).Add(aDB.ToString);
   Result := ExecuteWithIntegerResult(FNextCMD) = 1;
 end;
-
 function TRedisClient.MSET(const AKeysValues: array of string): boolean;
 begin
   FNextCMD := GetCmdList('MSET');
@@ -1163,7 +1056,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseSimpleStringResponse(FNotExists) = 'OK';
 end;
-
 procedure TRedisClient.MULTI;
 begin
   FNextCMD := GetCmdList('MULTI');
@@ -1171,7 +1063,6 @@ begin
   ParseSimpleStringResponse(FValidResponse);
   FInTransaction := True;
 end;
-
 function TRedisClient.MULTI(ARedisTansactionProc: TRedisTransactionProc): TRedisArray;
 begin
   FNextCMD := GetCmdList('MULTI');
@@ -1192,18 +1083,15 @@ begin
     FInTransaction := False;
   end;
 end;
-
 procedure TRedisClient.NextToken(out Msg: string);
 begin
   Msg := FTCPLibInstance.Receive(FCommandTimeout);
   FIsTimeout := FTCPLibInstance.LastReadWasTimedOut;
 end;
-
 function TRedisClient.NextBytes(const ACount: UInt32): TBytes;
 begin
   FTCPLibInstance.ReceiveBytes(ACount, FCommandTimeout);
 end;
-
 // function TRedisClient.ParseArrayResponse(var AValidResponse: boolean)
 // : TArray<string>;
 // var
@@ -1257,7 +1145,6 @@ end;
 // // break;
 // // end;
 // end;
-
 function TRedisClient.ParseArrayResponseNULL: TRedisArray;
 var
   R: string;
@@ -1276,19 +1163,16 @@ begin
   if FIsTimeout then
     Exit;
   CheckResponseError(R);
-
   if R = TRedisConsts.NULL_ARRAY then
   begin
     Exit;
   end;
-
   if R.Chars[0] = '*' then
   begin
     ArrLength := R.Substring(1).ToInteger;
   end
   else
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_ARRAY_RESPONSE);
-
   SetLength(Values, ArrLength);
   if ArrLength = 0 then
     Exit;
@@ -1302,19 +1186,16 @@ begin
   end;
   Result := Values;
 end;
-
 function TRedisClient.ParseFloatResponse(var AValidResponse: boolean): Double;
 var
   LFormatSettings: TFormatSettings;
   LResponse: string;
  begin
   Result := -1;
-
   LFormatSettings.DecimalSeparator := '.';
   LResponse := ParseSimpleStringResponse(AValidResponse);
   TryStrtoFloat(LResponse, Result, LFormatSettings);
 end;
-
 function TRedisClient.ParseIntegerResponse(var AValidResponse: boolean): Int64;
 var
   R: string;
@@ -1329,12 +1210,10 @@ begin
       raise ERedisException.Create(R);
     Exit;
   end;
-
   NextToken(R);
   if FIsTimeout then
     Exit;
   CheckResponseError(R);
-
   case R.Chars[0] of
     ':':
       begin
@@ -1360,7 +1239,6 @@ begin
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_INTEGER_RESPONSE);
   end;
 end;
-
 function TRedisClient.ParseMatrixResponse: TRedisMatrix;
 var
   R: string;
@@ -1379,19 +1257,16 @@ begin
   if FIsTimeout then
     Exit;
   CheckResponseError(R);
-
   if R = TRedisConsts.NULL_ARRAY then
   begin
     Exit;
   end;
-
   if R.Chars[0] = '*' then
   begin
     ArrLength := R.Substring(1).ToInteger;
   end
   else
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_ARRAY_RESPONSE);
-
   SetLength(Values, ArrLength);
   if ArrLength = 0 then
     Exit;
@@ -1406,7 +1281,6 @@ begin
   end;
   Result := Values;
 end;
-
 function TRedisClient.ParseRESPArray: TRedisRESPArray;
 var
   lTokenType: String;
@@ -1424,12 +1298,10 @@ begin
   if FIsTimeout then
     Exit;
   CheckResponseError(R);
-
   if R = TRedisConsts.NULL_ARRAY then
   begin
     Exit;
   end;
-
   lTokenType := R.Chars[0];
   if lTokenType = '*' then
   begin
@@ -1439,7 +1311,6 @@ begin
   begin
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_ARRAY_RESPONSE);
   end;
-
   Result := TRedisRESPArray.Create;
   try
     if lArrLength = 0 then
@@ -1452,7 +1323,6 @@ begin
     raise;
   end;
 end;
-
 function TRedisClient.ParseSimpleStringResponse(var AValidResponse: boolean): string;
 var
   lRes: TRedisBytes;
@@ -1462,7 +1332,6 @@ begin
   if AValidResponse then
     Result := StringOf(lRes.Value);
 end;
-
 function TRedisClient.ParseSimpleStringResponseAsByteNULL: TRedisBytes;
 var
   R: string;
@@ -1472,7 +1341,6 @@ begin
   NextToken(R);
   if FIsTimeout then
     raise ERedisException.Create('Command Timeout');
-
   if (R = TRedisConsts.NULL_BULK_STRING) or (R = TRedisConsts.NULL_ARRAY) then
   begin
     // A client library API should return a null object and not an empty Array when
@@ -1481,14 +1349,12 @@ begin
     Exit;
   end;
   CheckResponseError(R);
-
   // In RESP, the type of some data depends on the first byte:
   // For Simple Strings the first byte of the reply is "+"
   // For Errors the first byte of the reply is "-"
   // For Integers the first byte of the reply is ":"
   // For Bulk Strings the first byte of the reply is "$"
   // For Arrays the first byte of the reply is "*"
-
   case R.Chars[0] of
     '+':
       Result := BytesOf(R.Substring(1));
@@ -1505,7 +1371,6 @@ begin
     raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_STRING_RESPONSE);
   end;
 end;
-
 function TRedisClient.ParseSimpleStringResponseAsStringNULL: TRedisString;
 var
   lRes: TRedisBytes;
@@ -1513,20 +1378,17 @@ begin
   lRes := ParseSimpleStringResponseAsByteNULL;
   Result := Redis_BytesToString(lRes);
 end;
-
 function TRedisClient.PERSIST(const aKey: string): boolean;
 begin
   FNextCMD := GetCmdList('PERSIST').Add(aKey);
   Result := ExecuteWithIntegerResult(FNextCMD) = 1;
 end;
-
 function TRedisClient.PING: string;
 begin
   FNextCMD := GetCmdList('PING');
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseSimpleStringResponse(FIsValidResponse);
 end;
-
 function TRedisClient.POPCommands(const aCommand: string;
   const aListKey: string): TRedisString;
 begin
@@ -1535,7 +1397,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := Redis_BytesToString(ParseSimpleStringResponseAsByteNULL);
 end;
-
 function TRedisClient.PUBLISH(const AChannel: string; AMessage: string): Integer;
 begin
   FNextCMD := GetCmdList('PUBLISH');
@@ -1544,13 +1405,11 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.RANDOMKEY: TRedisString;
 begin
   FNextCMD := GetCmdList('RANDOMKEY');
   Result := ExecuteWithStringResult(FNextCMD);
 end;
-
 function TRedisClient.Redis_BytesToString(aValue: TRedisBytes): TRedisString;
 begin
   if aValue.HasValue then
@@ -1558,7 +1417,6 @@ begin
   else
     Result := TRedisString.Empty;
 end;
-
 function TRedisClient.RPOP(const aListKey: string; var Value: string): boolean;
 begin
   FNextCMD := GetCmdList('RPOP');
@@ -1566,13 +1424,11 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Value := ParseSimpleStringResponse(Result);
 end;
-
 function TRedisClient.BRPOP(const aKeys: array of string; const ATimeout: Int32): TRedisArray;
 begin
   FNextCMD := GetCmdList('BRPOP');
   Result := InternalBlockingLeftOrRightPOP(FNextCMD, aKeys, ATimeout);
 end;
-
 function TRedisClient.BRPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string; ATimeout: Int32): boolean;
 var
   lValue: string;
@@ -1583,7 +1439,6 @@ begin
   FNextCMD.Add(ALeftListKey);
   FNextCMD.Add(ATimeout.ToString);
   FTCPLibInstance.SendCmd(FNextCMD);
-
   lValue := ParseSimpleStringResponse(FValidResponse);
   Result := FValidResponse; // and (not(lValue = TRedisConsts.NULL_ARRAY));
   if Result then
@@ -1592,7 +1447,6 @@ begin
     // Result := FValidResponse;
   end;
 end;
-
 procedure TRedisClient.BuildZUNIONSTOREDefault(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string);
 var
   lKey: string;
@@ -1604,12 +1458,10 @@ begin
     FNextCMD.Add(lKey);
   end;
 end;
-
 function TRedisClient.RPOP(const aListKey: string): TRedisString;
 begin
   Result := POPCommands('RPOP', aListKey);
 end;
-
 function TRedisClient.RPOPLPUSH(const ARightListKey, ALeftListKey: string; var APoppedAndPushedElement: string): boolean;
 begin
   FNextCMD := GetCmdList('RPOPLPUSH');
@@ -1619,7 +1471,6 @@ begin
   APoppedAndPushedElement := ParseSimpleStringResponse(FValidResponse);
   Result := FValidResponse;
 end;
-
 function TRedisClient.RPUSH(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('RPUSH');
@@ -1628,7 +1479,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.RPUSHX(const aListKey: string; aValues: array of string): Integer;
 begin
   FNextCMD := GetCmdList('RPUSHX');
@@ -1637,27 +1487,22 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.&SET(const aKey, aValue: string): boolean;
 begin
   Result := &SET(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
 end;
-
 procedure TRedisClient.SetCommandTimeout(const Timeout: Int32);
 begin
   FCommandTimeout := Timeout;
 end;
-
 function TRedisClient.SETNX(const aKey, aValue: string): boolean;
 begin
   Result := SETNX(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
 end;
-
 function TRedisClient.&SET(const aKey: string; aValue: TBytes; ASecsExpire: UInt64): boolean;
 begin
   Result := &SET(BytesOfUnicode(aKey), aValue, ASecsExpire);
 end;
-
 function TRedisClient.&SET(const aKey: TBytes; aValue: TBytes; ASecsExpire: UInt64): boolean;
 begin
   FNextCMD := GetCmdList('SET');
@@ -1668,12 +1513,10 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseSimpleStringResponseAsByteNULL.HasValue
 end;
-
 function TRedisClient.&SET(const aKey: string; aValue: string; ASecsExpire: UInt64): boolean;
 begin
   Result := &SET(BytesOfUnicode(aKey), BytesOfUnicode(aValue), ASecsExpire);
 end;
-
 function TRedisClient.SETNX(const aKey, aValue: TBytes): boolean;
 begin
   FNextCMD := GetCmdList('SETNX');
@@ -1682,52 +1525,44 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse) = 1;
 end;
-
 function TRedisClient.SETRANGE(const aKey: string; const AOffset: NativeInt; const aValue: string): NativeInt;
 begin
   FNextCMD := GetCmdList('SETRANGE').Add(aKey).Add(AOffset).Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FIsValidResponse);
 end;
-
 function TRedisClient.SISMEMBER(const aKey, aValue: string): Integer;
 begin
   Result := SISMEMBER(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
 end;
-
 function TRedisClient.SISMEMBER(const aKey, aValue: TBytes): Integer;
 begin
   FNextCMD := GetCmdList('SISMEMBER').Add(aKey).Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.SMEMBERS(const aKey: string): TRedisArray;
 begin
   FNextCMD := GetCmdList('SMEMBERS').Add(aKey);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.SREM(const aKey, aValue: string): Integer;
 begin
   Result := SREM(BytesOfUnicode(aKey), BytesOfUnicode(aValue));
 end;
-
 function TRedisClient.STRLEN(const aKey: string): UInt64;
 begin
   FNextCMD := GetCmdList('STRLEN').Add(aKey);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.SREM(const aKey, aValue: TBytes): Integer;
 begin
   FNextCMD := GetCmdList('SREM').Add(aKey).Add(aValue);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 procedure TRedisClient.SUBSCRIBE(const AChannels: array of string; aCallback: TProc<string, string>; aContinueOnTimeoutCallback: TRedisTimeoutCallback = nil; aAfterSubscribe: TRedisAction = nil);
 var
   I: Integer;
@@ -1741,7 +1576,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   // just to implement a sort of non blocking subscribe
   SetCommandTimeout(RedisDefaultSubscribeTimeout);
-
   for I := 0 to Length(AChannels) - 1 do
   begin
     lArrNull := ParseArrayResponseNULL;
@@ -1757,7 +1591,6 @@ begin
     except
       // do nothing
     end;
-
   while True do
   begin
     lArrNull := ParseArrayResponseNULL;
@@ -1785,21 +1618,18 @@ begin
     end;
   end;
 end;
-
 function TRedisClient.SUNION(const aKeys: array of string): TRedisArray;
 begin
   FNextCMD := GetCmdList('SUNION').AddRange(aKeys);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.SUNIONSTORE(const aDestination: string; const aKeys: array of string): Integer;
 begin
   FNextCMD := GetCmdList('SUNIONSTORE').Add(aDestination).AddRange(aKeys);
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 function TRedisClient.SMOVE(const aSource, aDestination, aMember: string): Boolean;
 var
   lCmd: IRedisCommand;
@@ -1810,7 +1640,6 @@ begin
   lCmd.Add(aMember);
   Result := ExecuteWithIntegerResult(lCmd) = 1;
 end;
-
 function TRedisClient.Tokenize(const ARedisCommand: string): TArray<string>;
 var
   C: Char;
@@ -1846,7 +1675,6 @@ begin
               CurState := SQUOTED;
             end
           end;
-
         SQUOTED:
           begin
             if C = '\' then
@@ -1880,19 +1708,15 @@ begin
           end;
       end;
     end;
-
     if CurState <> SSINK then
       raise ERedisException.Create(TRedisConsts.ERR_NOT_A_VALID_COMMAND);
-
     if not Piece.IsEmpty then
       List.Add(Piece);
-
     Result := List.ToArray;
   finally
     List.Free;
   end;
 end;
-
 function TRedisClient.TTL(const aKey: string): Integer;
 begin
   FNextCMD := GetCmdList('TTL');
@@ -1900,7 +1724,6 @@ begin
   FTCPLibInstance.SendCmd(FNextCMD);
   Result := ParseIntegerResponse(FValidResponse);
 end;
-
 procedure TRedisClient.WATCH(const aKeys: array of string);
 var
   lKey: string;
@@ -1912,7 +1735,6 @@ begin
   end;
   ExecuteWithStringResult(FNextCMD); // ALWAYS 'OK' OR EXCEPTION
 end;
-
 function TRedisClient.XADD(const aStreamName: String; const MaxLength: UInt64; const MaxLengthType: TRedisMaxLengthType; const Keys, Values: array of string; const ID: UInt64): String;
 var
   lCmd: IRedisCommand;
@@ -1920,7 +1742,6 @@ const
   MAX_LENGTH_TYPE: array[TRedisMaxLengthType.Exact..TRedisMaxLengthType.AtLeast] of string = ('','');
 begin
   Assert(Length(Keys) = Length(Values), 'Keys and Values arrays must have the same length');
-
   lCmd := NewRedisCommand('XADD');
   lCmd.Add(aStreamName).Add('MAXLEN');
   if MaxLengthType = TRedisMaxLengthType.AtLeast then
@@ -1928,7 +1749,6 @@ begin
     lCmd.Add('~');
   end;
   lCmd.Add(MaxLength);
-
   if ID = 0 then
   begin
     lCmd.Add('*')
@@ -1937,11 +1757,9 @@ begin
   begin
     lCmd.Add(ID);
   end;
-
   AppendKeyValueParams(lCmd, Keys, Values);
   Result := ExecuteWithStringResult(lCmd);
 end;
-
 function TRedisClient.AppendKeyValueParams(const aRedisCommand: IRedisCommand; const Keys, Values: array of string): String;
 var
   I: Integer;
@@ -1952,7 +1770,6 @@ begin
     aRedisCommand.Add(Keys[I]).Add(Values[I]);
   end;
 end;
-
 function TRedisClient.XADD(const aStreamName: String; const Keys, Values: array of string; const ID: UInt64 = 0): String;
 var
   lCmd: IRedisCommand;
@@ -1971,34 +1788,29 @@ begin
   AppendKeyValueParams(lCmd, Keys, Values);
   Result := ExecuteWithStringResult(lCmd);
 end;
-
 function TRedisClient.ZADD(const aKey: string; const AScore: Int64; const AMember: string): Integer;
 begin
   FNextCMD := GetCmdList('ZADD');
   FNextCMD.Add(aKey).Add(AScore.ToString).Add(AMember);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function TRedisClient.ZCARD(const aKey: string): Integer;
 begin
   FNextCMD := GetCmdList('ZCARD').Add(aKey);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function TRedisClient.ZCOUNT(const aKey: string; const AMin, AMax: Int64): Integer;
 begin
   FNextCMD := GetCmdList('ZCOUNT');
   FNextCMD.Add(aKey).Add(AMin.ToString).Add(AMax.ToString);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function TRedisClient.ZINCRBY(const aKey: string; const AIncrement: Int64; const AMember: string): string;
 begin
   FNextCMD := GetCmdList('ZINCRBY');
   FNextCMD.Add(aKey).Add(AIncrement.ToString).Add(AMember);
   Result := ExecuteWithStringResult(FNextCMD);
 end;
-
 function TRedisClient.ZRANGE(const aKey: string; const AStart, AStop: Int64; const aScoreMode: TRedisScoreMode): TRedisArray;
 begin
   FNextCMD := GetCmdList('ZRANGE');
@@ -2009,7 +1821,6 @@ begin
   end;
   Result := ExecuteAndGetArrayNULL(FNextCMD);
 end;
-
 // function TRedisClient.ZRANGEWithScore(const aKey: string;
 // const AStart, AStop: Int64): TRedisArray;
 // begin
@@ -2017,7 +1828,6 @@ end;
 // FNextCMD.Add(aKey).Add(AStart.ToString).Add(AStop.ToString).Add('WITHSCORES');
 // Result := ExecuteAndGetArrayNULL(FNextCMD);
 // end;
-
 function TRedisClient.ZRANK(const aKey: string; const AMember: string; out ARank: Int64): boolean;
 begin
   FNextCMD := GetCmdList('ZRANK');
@@ -2025,14 +1835,12 @@ begin
   ARank := ExecuteWithIntegerResult(FNextCMD);
   Result := ARank <> -1;
 end;
-
 function TRedisClient.ZREM(const aKey, AMember: string): Integer;
 begin
   FNextCMD := GetCmdList('ZREM');
   FNextCMD.Add(aKey).Add(AMember);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function TRedisClient.ZREVRANGE(const aKey: string; const AStart, AStop: Int64; const aScoreMode: TRedisScoreMode): TRedisArray;
 begin
   FNextCMD := GetCmdList('ZREVRANGE');
@@ -2043,7 +1851,6 @@ begin
   end;
   Result := ExecuteAndGetArrayNULL(FNextCMD);
 end;
-
 function TRedisClient.ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer; const aAggregate: TRedisAggregate): Int64;
 var
   lWeight: Integer;
@@ -2057,7 +1864,6 @@ begin
   FNextCMD.AddRange(['AGGREGATE', REDIS_AGGREGATE[aAggregate]]);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function TRedisClient.ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string; const aWeights: array of Integer): Int64;
 var
   lWeight: NativeInt;
@@ -2070,7 +1876,6 @@ begin
   end;
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function TRedisClient.ZPOPMIN(const aKey: string): TRedisArray;
 var
   lCmd: IRedisCommand;
@@ -2080,7 +1885,6 @@ begin
   FTCPLibInstance.SendCmd(lCmd);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.ZPOPMIN(const aKey: string; aCount: Integer): TRedisArray;
 var
   lCmd: IRedisCommand;
@@ -2091,7 +1895,6 @@ begin
   FTCPLibInstance.SendCmd(lCmd);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.ZPOPMAX(const aKey: string): TRedisArray;
 var
   lCmd: IRedisCommand;
@@ -2101,7 +1904,6 @@ begin
   FTCPLibInstance.SendCmd(lCmd);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.ZPOPMAX(const aKey: string; aCount: Integer): TRedisArray;
 var
   lCmd: IRedisCommand;
@@ -2112,13 +1914,11 @@ begin
   FTCPLibInstance.SendCmd(lCmd);
   Result := ParseArrayResponseNULL;
 end;
-
 function TRedisClient.ZUNIONSTORE(const aDestination: string; const aNumKeys: NativeInt; const aKeys: array of string): Int64;
 begin
   BuildZUNIONSTOREDefault(aDestination, aNumKeys, aKeys);
   Result := ExecuteWithIntegerResult(FNextCMD);
 end;
-
 function NewRedisClient(const AHostName: string; const APort: Word; const ALibName: string): IRedisClient;
 var
   TCPLibInstance: IRedisNetLibAdapter;
@@ -2135,13 +1935,11 @@ begin
     end;
   end;
 end;
-
 function NewRedisCommand(const RedisCommandString: string): IRedisCommand;
 begin
   Result := TRedisCommand.Create;
   TRedisCommand(Result).SetCommand(RedisCommandString);
 end;
-
 function TRedisClient.GEOADD(const Key: string; const Latitude, Longitude: Extended; Member: string): Integer;
 var
   lCmd: IRedisCommand;
@@ -2153,7 +1951,6 @@ begin
   lCmd.Add(Member);
   Result := ExecuteWithIntegerResult(lCmd);
 end;
-
 function TRedisClient.GEODIST(const Key, Member1, Member2: string; const &Unit: TRedisGeoUnit): TRedisString;
 var
   lCmd: IRedisCommand;
@@ -2165,7 +1962,6 @@ begin
   lCmd.Add(REDIS_GEO_UNIT_STRING[&Unit]);
   Result := ExecuteWithStringResult(lCmd);
 end;
-
 function TRedisClient.GEOHASH(const Key: string; const Members: array of string): TRedisArray;
 var
   lCmd: IRedisCommand;
@@ -2179,7 +1975,6 @@ begin
   end;
   Result := ExecuteAndGetArrayNULL(lCmd);
 end;
-
 function TRedisClient.GEOPOS(const Key: string; const Members: array of string): TRedisMatrix;
 var
   lCmd: IRedisCommand;
@@ -2193,7 +1988,6 @@ begin
   end;
   Result := ExecuteAndGetMatrix(lCmd);
 end;
-
 function TRedisClient.GEORADIUS(const Key: string;
   const Longitude, Latitude: Extended; const Radius: Extended;
   const &Unit: TRedisGeoUnit; const Sorting: TRedisSorting; const Count: Int64): TRedisArray;
@@ -2204,7 +1998,6 @@ begin
     Sorting, Count);
   Result := ExecuteAndGetArrayNULL(lCmd);
 end;
-
 function TRedisClient.GEORADIUS_WITHDIST(const Key: string;
   const Longitude, Latitude: Extended; const Radius: Extended;
   const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
@@ -2217,7 +2010,6 @@ begin
   lCmd.Add('WITHDIST');
   Result := ExecuteAndGetMatrix(lCmd);
 end;
-
 function TRedisClient.GEOSEARCH(const Key: string; const FromMember: string;
   const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
   const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisArray;
@@ -2241,7 +2033,6 @@ begin
   end;
   Result := ExecuteAndGetArrayNULL(lCmd);
 end;
-
 function TRedisClient.GEOSEARCH(const Key: string; const Longitude, Latitude: Extended;
   const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
   const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): TRedisArray;
@@ -2266,7 +2057,6 @@ begin
   end;
   Result := ExecuteAndGetArrayNULL(lCmd);
 end;
-
 function TRedisClient.GEOSEARCHSTORE(const Destination, Source: string; const FromMember: string;
   const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
   const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): Integer;
@@ -2291,7 +2081,6 @@ begin
   end;
   Result := ExecuteWithIntegerResult(lCmd);
 end;
-
 function TRedisClient.GEOSEARCHSTORE(const Destination, Source: string; const Longitude, Latitude: Extended;
   const Radius: Extended; const &Unit: TRedisGeoUnit = TRedisGeoUnit.Meters;
   const Sorting: TRedisSorting = TRedisSorting.None; const Count: Int64 = -1): Integer;
@@ -2317,12 +2106,10 @@ begin
   end;
   Result := ExecuteWithIntegerResult(lCmd);
 end;
-
 function TRedisClient.GET(const aKey: string; out aValue: TBytes): boolean;
 begin
   Result := GET(BytesOf(aKey), aValue);
 end;
-
 function TRedisClient.GET(const aKey: string): TRedisString;
 var
   lResp: TRedisBytes;
@@ -2333,9 +2120,7 @@ begin
   else
     Result := TRedisString.Empty;
 end;
-
 // Redis 6.2+ commands implementation
-
 function TRedisClient.GETEX(const aKey: string; aExpirationMs: UInt64): TRedisString;
 var
   lCmd: IRedisCommand;
@@ -2352,7 +2137,6 @@ begin
   else
     Result := TRedisString.Empty;
 end;
-
 function TRedisClient.GETEX(const aKey: string; aExpirationSec: UInt64; const UseSeconds: Boolean): TRedisString;
 var
   lCmd: IRedisCommand;
@@ -2377,7 +2161,6 @@ begin
   else
     Result := TRedisString.Empty;
 end;
-
 function TRedisClient.GETDEL(const aKey: string): TRedisString;
 var
   lCmd: IRedisCommand;
@@ -2392,7 +2175,6 @@ begin
   else
     Result := TRedisString.Empty;
 end;
-
 function TRedisClient.COPY(const aSourceKey, aDestKey: string; const aReplace: Boolean): Boolean;
 var
   lCmd: IRedisCommand;
@@ -2404,5 +2186,4 @@ begin
     lCmd.Add('REPLACE');
   Result := ExecuteWithIntegerResult(lCmd) = 1;
 end;
-
 end.
