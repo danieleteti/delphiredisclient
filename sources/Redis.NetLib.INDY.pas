@@ -49,6 +49,7 @@ type
     procedure WriteCrLf(const Bytes: System.TArray<System.Byte>); override;
     function LastReadWasTimedOut: boolean; override;
     function LibName: string; override;
+    procedure TimeoutConnect(AValue: Integer); override;
   end;
 
 
@@ -129,6 +130,11 @@ begin
   write(Bytes);
   FTCPClient.IOHandler.Write(#13);
   FTCPClient.IOHandler.Write(#10);
+end;
+
+procedure TRedisTCPLibINDY.TimeoutConnect(AValue: Integer);
+begin
+  FTCPClient.ConnectTimeout := AValue;
 end;
 
 initialization

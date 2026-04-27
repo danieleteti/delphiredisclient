@@ -47,6 +47,7 @@ type
     procedure Disconnect; virtual; abstract;
     function LastReadWasTimedOut: boolean; virtual; abstract;
     function LibName: string; virtual;
+    procedure TimeoutConnect(AValue: Integer); virtual; abstract;
   end;
 
   TRedisTCPLibClass = class of TRedisNetLibAdapter;

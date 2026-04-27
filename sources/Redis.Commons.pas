@@ -36,6 +36,7 @@ var
 
 const
   REDIS_NETLIB_INDY = 'indy';
+  REDIS_NETLIB_SYNAPSE = 'synapse';
 
 type
   TRedisKeyList = TArray<string>;
@@ -75,6 +76,7 @@ type
 
   IRedisCommand = interface;
   IRedisClient = interface;
+  IRedisNetLibAdapter = interface;
 
   TRedisTransactionProc = reference to procedure(const Redis: IRedisClient);
   TRedisTimeoutCallback = reference to function: boolean;
@@ -344,6 +346,7 @@ type
     procedure ClientSetName(const ClientName: string);
     procedure SetCommandTimeout(const Timeout: Int32);
     function Clone: IRedisClient;
+    function Adapter: IRedisNetLibAdapter;
   end;
 
   IRedisCommand = interface
@@ -373,6 +376,7 @@ type
     procedure Disconnect;
     function LastReadWasTimedOut: boolean;
     function LibName: string;
+    procedure TimeoutConnect(AValue: Integer);
   end;
 
 function ByteToHex(InByte: Byte): string;
